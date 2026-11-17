@@ -290,13 +290,15 @@
 
     <div class="bottom-bar">
       <div class="action-dock">
-        <button class="btn btn-primary" id="btn-next">⚡ Next Model</button>
+        <button class="btn btn-primary" id="btn-next">⚡ Spawn Now</button>
+        <button class="btn" id="btn-mode">🌌 Mode: Swarm</button>
         <button class="btn" id="btn-toggle-auto">⏸ Auto: ON</button>
         <button class="btn" id="btn-wire-spin">🌀 Spin: ON</button>
+        <button class="btn" id="btn-clear">🗑 Clear</button>
         <div class="progress-wrap">
           <div class="progress-label">
             <span>Next Forge</span>
-            <span id="countdown-text">6.0s</span>
+            <span id="countdown-text">2.0s</span>
           </div>
           <div class="progress-track">
             <div class="progress-fill" id="progress-fill"></div>
@@ -1611,12 +1613,13 @@
         // Studio floor shading with radial contact shadow & subtle rings
         if (u.anim.z > 0.5) {
           let r = length(in.worldPos.xz);
-          let fade = smoothstep(5.2, 0.6, r);
-          let contactAO = smoothstep(0.35, 1.75, r);
-          let ring = smoothstep(0.02, 0.0, abs(r - 1.68)) * 0.85
-                   + smoothstep(0.012, 0.0, abs(r - 2.35)) * 0.25;
+          let fade = smoothstep(14.5, 1.5, r);
+          let contactAO = smoothstep(0.35, 2.2, r);
+          let ring = smoothstep(0.025, 0.0, abs(r - 1.68)) * 0.8
+                   + smoothstep(0.02, 0.0, abs(r - 4.4)) * 0.35
+                   + smoothstep(0.02, 0.0, abs(r - 7.8)) * 0.2;
           let floorCol = vec3f(0.015, 0.025, 0.045) * (0.35 + 0.65 * contactAO)
-                       + u.accent.rgb * ring * 1.4;
+                       + u.accent.rgb * ring * 1.25;
           return vec4f(floorCol * fade, 1.0);
         }
 
@@ -1796,7 +1799,7 @@
     // Studio floor disc
     function buildFloorDisc() {
       const mb = new MeshBuilder();
-      const segs = 64, r = 5.4, y = -1.62;
+      const segs = 72, r = 15.0, y = -1.62;
       for (let i = 0; i < segs; i++) {
         const a0 = (i / segs) * Math.PI * 2;
         const a1 = ((i + 1) / segs) * Math.PI * 2;
@@ -1869,16 +1872,43 @@
     window.addEventListener("resize", ensureSize);
     ensureSize();
 
+    function mat4TransformY(tx, ty, tz, angle, scale) {
+      const c = Math.cos(angle) * scale;
+      const s = Math.sin(angle) * scale;
+      return new Float32Array([
+        c, 0, -s, 0,
+        0, scale, 0, 0,
+        s, 0, c, 0,
+        tx, ty, tz, 1,
+      ]);
+    }
+
     let currentCategory = "random";
+    let viewMode = "swarm"; // "swarm" (default) | "single"
     let autoCycle = true;
     let autoSpin = true;
-    const CYCLE_SECONDS = 6.0;
+    const MAX_SWARM_MODELS = 32;
+    const GROUNDED_CATS = new Set(["flora", "crystal", "architecture"]);
     let cycleElapsed = 0;
     let forgedCount = 0;
 
-    let activeModel = null;
-    let activeBuffer = null;
-    let transitionT = 0;
+    // Array of active model entities in the scene
+    // Each: { result, vertexBuffer, uniformBuffer, bindGroup, pos, baseRot, rotSpeed, targetScale, transitionT, driftAmp, driftSpeed, phase, grounded }
+    let entities = [];
+
+    function destroyEntity(ent) {
+      ent.vertexBuffer.destroy();
+      ent.uniformBuffer.destroy();
+    }
+
+    function clearEntities() {
+      for (const ent of entities) destroyEntity(ent);
+      entities = [];
+    }
+
+    function getCycleSeconds() {
+      return viewMode === "swarm" ? 2.0 : 6.0;
+    }
 
     function forgeNextModel() {
       const t0 = performance.now();
@@ -1891,29 +1921,86 @@
       const result = GENERATORS[cat](rng);
       const genMs = (performance.now() - t0).toFixed(1);
 
-      if (activeBuffer) activeBuffer.destroy();
-      activeBuffer = device.createBuffer({
+      const vertexBuffer = device.createBuffer({
         size: Math.max(result.mesh.data.byteLength, 64),
         usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
       });
-      device.queue.writeBuffer(activeBuffer, 0, result.mesh.data);
+      device.queue.writeBuffer(vertexBuffer, 0, result.mesh.data);
 
-      activeModel = result;
-      transitionT = 0;
-      cycleElapsed = 0;
+      const uBuf = device.createBuffer({
+        size: 176,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+      });
+      const bGroup = device.createBindGroup({
+        layout: scenePipeline.getBindGroupLayout(0),
+        entries: [{ binding: 0, resource: { buffer: uBuf } }],
+      });
+
       forgedCount++;
+      cycleElapsed = 0;
+
+      if (viewMode === "single") {
+        clearEntities();
+        entities.push({
+          result,
+          vertexBuffer,
+          uniformBuffer: uBuf,
+          bindGroup: bGroup,
+          pos: [0, 0, 0],
+          baseRot: 0,
+          rotSpeed: 0.38,
+          targetScale: 1.0,
+          transitionT: 0,
+          driftAmp: 0,
+          driftSpeed: 0,
+          phase: 0,
+          grounded: false,
+        });
+      } else {
+        if (entities.length >= MAX_SWARM_MODELS) {
+          const oldest = entities.shift();
+          destroyEntity(oldest);
+        }
+        const idx = forgedCount - 1;
+        const isFirst = entities.length === 0;
+        const angle = idx * 2.399963 + (rng() - 0.5) * 0.35;
+        const radius = isFirst ? 0 : Math.min(8.6, 1.75 + Math.sqrt(entities.length) * 1.45);
+        const scale = isFirst ? 0.85 : 0.42 + rng() * 0.38;
+        const grounded = GROUNDED_CATS.has(cat);
+        const yPos = grounded
+          ? -1.62 + 1.05 * scale
+          : (isFirst ? 0.2 : -0.25 + rng() * 3.6);
+
+        entities.push({
+          result,
+          vertexBuffer,
+          uniformBuffer: uBuf,
+          bindGroup: bGroup,
+          pos: [Math.cos(angle) * radius, yPos, Math.sin(angle) * radius],
+          baseRot: rng() * Math.PI * 2,
+          rotSpeed: grounded ? 0.08 : (rng() - 0.5) * 0.55,
+          targetScale: scale,
+          transitionT: 0,
+          driftAmp: grounded ? 0 : 0.14 + rng() * 0.24,
+          driftSpeed: 0.4 + rng() * 0.6,
+          phase: rng() * Math.PI * 2,
+          grounded,
+        });
+      }
 
       modelNameEl.textContent = result.name;
       archetypeBadgeEl.textContent = `[${cat.toUpperCase()}]`;
       statSeedEl.textContent = `Seed: #${seed.toString(16).toUpperCase().padStart(8, "0")}`;
       statTrisEl.textContent = `Tris: ${result.mesh.triCount.toLocaleString()}`;
       statTimeEl.textContent = `Gen: ${genMs} ms`;
-      statCountEl.textContent = `Forged: ${forgedCount}`;
+      statCountEl.textContent = viewMode === "swarm"
+        ? `In Space: ${entities.length} / Total: ${forgedCount}`
+        : `Forged: ${forgedCount}`;
     }
 
     let camYaw = 0.65;
-    let camPitch = 0.25;
-    let camDist = 5.1;
+    let camPitch = 0.24;
+    let camDist = 9.6;
     let dragging = false;
     let lastX = 0, lastY = 0;
 
@@ -1931,10 +2018,27 @@
       lastY = e.clientY;
     });
     canvas.addEventListener("wheel", (e) => {
-      camDist = Math.max(2.4, Math.min(11.0, camDist + e.deltaY * 0.004));
+      camDist = Math.max(2.4, Math.min(22.0, camDist + e.deltaY * 0.006));
     }, { passive: true });
 
-    document.getElementById("btn-next").addEventListener("click", forgeNextModel);
+    const btnNext = document.getElementById("btn-next");
+    const btnMode = document.getElementById("btn-mode");
+    const btnClear = document.getElementById("btn-clear");
+
+    btnNext.addEventListener("click", forgeNextModel);
+    btnMode.addEventListener("click", () => {
+      viewMode = viewMode === "swarm" ? "single" : "swarm";
+      btnMode.textContent = viewMode === "swarm" ? "🌌 Mode: Swarm" : "🎯 Mode: Single";
+      btnNext.textContent = viewMode === "swarm" ? "⚡ Spawn Now" : "⚡ Next Model";
+      btnClear.style.display = viewMode === "swarm" ? "inline-flex" : "none";
+      camDist = viewMode === "swarm" ? 9.6 : 5.1;
+      clearEntities();
+      forgeNextModel();
+    });
+    btnClear.addEventListener("click", () => {
+      clearEntities();
+      forgeNextModel();
+    });
     document.getElementById("btn-toggle-auto").addEventListener("click", (e) => {
       autoCycle = !autoCycle;
       e.target.textContent = autoCycle ? "⏸ Auto: ON" : "▶ Auto: OFF";
@@ -1963,49 +2067,50 @@
     forgeNextModel();
 
     let lastFrame = performance.now();
-    let spinAngle = 0;
+    let camAutoYaw = 0;
 
     function frame(now) {
       const dt = Math.min((now - lastFrame) * 0.001, 0.1);
       lastFrame = now;
       const t = now * 0.001;
+      const cycleSec = getCycleSeconds();
 
       if (autoCycle) {
         cycleElapsed += dt;
-        if (cycleElapsed >= CYCLE_SECONDS) forgeNextModel();
+        if (cycleElapsed >= cycleSec) forgeNextModel();
       }
-      const pct = Math.min(100, (cycleElapsed / CYCLE_SECONDS) * 100);
+      const pct = Math.min(100, (cycleElapsed / cycleSec) * 100);
       progressFillEl.style.width = `${pct}%`;
-      countdownTextEl.textContent = autoCycle ? `${Math.max(0, CYCLE_SECONDS - cycleElapsed).toFixed(1)}s` : "Paused";
+      countdownTextEl.textContent = autoCycle ? `${Math.max(0, cycleSec - cycleElapsed).toFixed(1)}s` : "Paused";
 
-      transitionT = Math.min(1, transitionT + dt * 3.0);
-      const easeOut = 1 - Math.pow(1 - transitionT, 3);
-      if (autoSpin && !dragging) spinAngle += dt * 0.38;
+      if (autoSpin && !dragging && viewMode === "swarm") {
+        camYaw += dt * 0.12;
+      } else if (autoSpin && !dragging && viewMode === "single") {
+        camAutoYaw += dt * 0.38;
+      }
 
       ensureSize();
       const aspect = canvas.width / canvas.height;
       const eye = [
         Math.cos(camPitch) * Math.sin(camYaw) * camDist,
-        Math.sin(camPitch) * camDist,
+        Math.sin(camPitch) * camDist + (viewMode === "swarm" ? 0.6 : 0),
         Math.cos(camPitch) * Math.cos(camYaw) * camDist,
       ];
-      const view = mat4LookAt(eye, [0, 0, 0], [0, 1, 0]);
-      const proj = mat4Perspective(Math.PI / 4, aspect, 0.1, 60.0);
+      const lookTarget = viewMode === "swarm" ? [0, 0.35, 0] : [0, 0, 0];
+      const view = mat4LookAt(eye, lookTarget, [0, 1, 0]);
+      const proj = mat4Perspective(Math.PI / 4, aspect, 0.1, 80.0);
       const viewProj = mat4Mul(proj, view);
 
-      const accent = activeModel ? activeModel.accent : [0.3, 0.9, 0.95];
+      const latest = entities[entities.length - 1];
+      const accent = latest ? latest.result.accent : [0.3, 0.9, 0.95];
 
-      // Update model uniforms
-      const modelMat = mat4RotateYScale(spinAngle, easeOut);
-      const uData = new Float32Array(44);
-      uData.set(viewProj, 0);
-      uData.set(modelMat, 16);
-      uData.set([eye[0], eye[1], eye[2], t], 32);
-      uData.set([activeModel ? activeModel.animMode : 0, activeModel ? activeModel.sss : 0, 0, 0], 36);
-      uData.set([accent[0], accent[1], accent[2], 1], 40);
-      device.queue.writeBuffer(uniformBuffer, 0, uData);
+      // Backdrop & floor uniforms
+      const bgData = new Float32Array(44);
+      bgData.set(viewProj, 0);
+      bgData.set([eye[0], eye[1], eye[2], t], 32);
+      bgData.set([accent[0], accent[1], accent[2], 1], 40);
+      device.queue.writeBuffer(uniformBuffer, 0, bgData);
 
-      // Update floor uniforms
       const floorMat = mat4RotateYScale(0, 1.0);
       const fData = new Float32Array(44);
       fData.set(viewProj, 0);
@@ -2039,10 +2144,35 @@
       scenePass.draw(3);
 
       scenePass.setPipeline(scenePipeline);
-      if (activeModel && activeBuffer) {
-        scenePass.setBindGroup(0, modelBindGroup);
-        scenePass.setVertexBuffer(0, activeBuffer);
-        scenePass.draw(activeModel.mesh.vertCount);
+      for (const ent of entities) {
+        ent.transitionT = Math.min(1, ent.transitionT + dt * 2.6);
+        const easeOut = 1 - Math.pow(1 - ent.transitionT, 3);
+        const s = ent.targetScale * easeOut;
+
+        const rot = viewMode === "single"
+          ? camAutoYaw
+          : ent.baseRot + t * ent.rotSpeed;
+        const driftY = Math.sin(t * ent.driftSpeed + ent.phase) * ent.driftAmp;
+        const driftX = Math.cos(t * ent.driftSpeed * 0.7 + ent.phase) * ent.driftAmp * 0.5;
+        const modelMat = mat4TransformY(
+          ent.pos[0] + driftX,
+          ent.pos[1] + driftY,
+          ent.pos[2],
+          rot,
+          s
+        );
+
+        const uData = new Float32Array(44);
+        uData.set(viewProj, 0);
+        uData.set(modelMat, 16);
+        uData.set([eye[0], eye[1], eye[2], t], 32);
+        uData.set([ent.result.animMode, ent.result.sss, 0, 0], 36);
+        uData.set([ent.result.accent[0], ent.result.accent[1], ent.result.accent[2], 1], 40);
+        device.queue.writeBuffer(ent.uniformBuffer, 0, uData);
+
+        scenePass.setBindGroup(0, ent.bindGroup);
+        scenePass.setVertexBuffer(0, ent.vertexBuffer);
+        scenePass.draw(ent.result.mesh.vertCount);
       }
 
       scenePass.setBindGroup(0, floorBindGroup);
