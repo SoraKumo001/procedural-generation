@@ -1,0 +1,2074 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Procedural Genesis — WebGPU PBR &amp; Bloom Showcase</title>
+  <style>
+    :root {
+      --bg: #03060c;
+      --panel: rgba(8, 13, 24, 0.72);
+      --border: rgba(130, 205, 255, 0.18);
+      --text: #e8f2ff;
+      --muted: #8298b6;
+      --accent: #4deeea;
+      --accent2: #a855f7;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      user-select: none;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+    }
+    canvas:active { cursor: grabbing; }
+
+    .hud {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 20px 24px;
+      transition: opacity 0.3s ease;
+    }
+    .hud.hidden { opacity: 0; }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    .brand {
+      pointer-events: auto;
+      background: var(--panel);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 18px;
+      max-width: 440px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+    }
+    .brand-eyebrow {
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .pulse-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 10px var(--accent);
+      animation: pulse 1.8s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.75); }
+    }
+    .model-title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+    .model-sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .stat-chip {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .controls-top {
+      pointer-events: auto;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      max-width: 580px;
+    }
+    .pill {
+      background: var(--panel);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+    .pill:hover {
+      color: var(--text);
+      border-color: rgba(120, 200, 255, 0.45);
+    }
+    .pill.active {
+      color: #041019;
+      background: var(--accent);
+      border-color: var(--accent);
+      font-weight: 600;
+      box-shadow: 0 0 16px rgba(77, 238, 234, 0.35);
+    }
+
+    .bottom-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 16px;
+    }
+    .action-dock {
+      pointer-events: auto;
+      background: var(--panel);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+    }
+    .btn {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.14);
+      color: var(--text);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.16s ease;
+    }
+    .btn:hover {
+      background: rgba(255,255,255,0.14);
+      transform: translateY(-1px);
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #38bdf8);
+      color: #03111a;
+      border: none;
+      box-shadow: 0 4px 18px rgba(77, 238, 234, 0.28);
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #6ef4f0, #60cdff);
+    }
+
+    .progress-wrap {
+      width: 140px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .progress-label {
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      font-variant-numeric: tabular-nums;
+    }
+    .progress-track {
+      height: 4px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.1);
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width 0.08s linear;
+    }
+
+    .hint {
+      pointer-events: auto;
+      background: var(--panel);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    kbd {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 4px;
+      padding: 1px 5px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 10px;
+    }
+
+    .error-overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(4, 7, 13, 0.94);
+      padding: 24px;
+      text-align: center;
+      z-index: 99;
+    }
+    .error-card {
+      max-width: 480px;
+      background: #0d1525;
+      border: 1px solid rgba(255, 100, 100, 0.35);
+      border-radius: 16px;
+      padding: 28px;
+    }
+    .error-card h2 { margin-bottom: 10px; color: #ff7b7b; }
+    .error-card p { color: var(--muted); font-size: 14px; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <canvas id="gpu-canvas"></canvas>
+
+  <div class="hud" id="hud">
+    <div class="top-bar">
+      <div class="brand">
+        <div class="brand-eyebrow">
+          <span class="pulse-dot"></span>
+          <span>WEBGPU PBR · 4x MSAA · HDR BLOOM</span>
+          <span id="archetype-badge" style="color:#c084fc;font-weight:700;"></span>
+        </div>
+        <div class="model-title" id="model-name">Initializing WebGPU...</div>
+        <div class="model-sub">
+          <span class="stat-chip" id="stat-seed">Seed: —</span>
+          <span class="stat-chip" id="stat-tris">Tris: —</span>
+          <span class="stat-chip" id="stat-time">Gen: —</span>
+          <span class="stat-chip" id="stat-count">Forged: 0</span>
+        </div>
+      </div>
+
+      <div class="controls-top" id="category-pills">
+        <button class="pill active" data-cat="random">All Random</button>
+        <button class="pill" data-cat="jellyfish">Abyssal Jelly</button>
+        <button class="pill" data-cat="leviathan">Leviathan</button>
+        <button class="pill" data-cat="flora">Coral / Flora</button>
+        <button class="pill" data-cat="crystal">Crystals</button>
+        <button class="pill" data-cat="spaceship">Starship</button>
+        <button class="pill" data-cat="relic">Toroid Relic</button>
+        <button class="pill" data-cat="architecture">Citadel</button>
+        <button class="pill" data-cat="serpent">Sea Serpent</button>
+        <button class="pill" data-cat="butterfly">Luminous Moth</button>
+        <button class="pill" data-cat="squid">Abyssal Squid</button>
+        <button class="pill" data-cat="shell">Nautilus</button>
+        <button class="pill" data-cat="station">Orbital Ring</button>
+        <button class="pill" data-cat="island">Sky Island</button>
+        <button class="pill" data-cat="fractal">Fractal</button>
+      </div>
+    </div>
+
+    <div class="bottom-bar">
+      <div class="action-dock">
+        <button class="btn btn-primary" id="btn-next">⚡ Next Model</button>
+        <button class="btn" id="btn-toggle-auto">⏸ Auto: ON</button>
+        <button class="btn" id="btn-wire-spin">🌀 Spin: ON</button>
+        <div class="progress-wrap">
+          <div class="progress-label">
+            <span>Next Forge</span>
+            <span id="countdown-text">6.0s</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="progress-fill"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hint">
+        Drag: Orbit &nbsp;|&nbsp; Scroll: Zoom &nbsp;|&nbsp; <kbd>Space</kbd> Next &nbsp;|&nbsp; <kbd>H</kbd> Hide UI
+      </div>
+    </div>
+  </div>
+
+  <div class="error-overlay" id="error-overlay">
+    <div class="error-card">
+      <h2>WebGPU Unavailable</h2>
+      <p id="error-message">
+        このデモは WebGPU + WGSL シェーダーを使用しています。最新版の Chrome または Edge（WebGPU有効環境）で開いてください。
+      </p>
+    </div>
+  </div>
+
+  <script type="module">
+    // =========================================================================
+    // 1. Seeded PRNG & Math Utilities
+    // =========================================================================
+    function mulberry32(seed) {
+      let a = seed >>> 0;
+      return function () {
+        a |= 0; a = (a + 0x6D2B79F5) | 0;
+        let t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function hslToRgb(h, s, l) {
+      h = ((h % 1) + 1) % 1;
+      const a = s * Math.min(l, 1 - l);
+      const f = (n) => {
+        const k = (n + h * 12) % 12;
+        return l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+      };
+      return [f(0), f(8), f(4)];
+    }
+
+    const v3 = {
+      add: (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]],
+      sub: (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]],
+      mul: (a, s) => [a[0] * s, a[1] * s, a[2] * s],
+      dot: (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
+      cross: (a, b) => [
+        a[1] * b[2] - a[2] * b[1],
+        a[2] * b[0] - a[0] * b[2],
+        a[0] * b[1] - a[1] * b[0],
+      ],
+      norm: (a) => {
+        const l = Math.hypot(a[0], a[1], a[2]) || 1;
+        return [a[0] / l, a[1] / l, a[2] / l];
+      },
+    };
+
+    function mat4Perspective(fovY, aspect, near, far) {
+      const f = 1 / Math.tan(fovY / 2);
+      const nf = 1 / (near - far);
+      return new Float32Array([
+        f / aspect, 0, 0, 0,
+        0, f, 0, 0,
+        0, 0, far * nf, -1,
+        0, 0, near * far * nf, 0,
+      ]);
+    }
+
+    function mat4LookAt(eye, target, up) {
+      const z = v3.norm(v3.sub(eye, target));
+      const x = v3.norm(v3.cross(up, z));
+      const y = v3.cross(z, x);
+      return new Float32Array([
+        x[0], y[0], z[0], 0,
+        x[1], y[1], z[1], 0,
+        x[2], y[2], z[2], 0,
+        -v3.dot(x, eye), -v3.dot(y, eye), -v3.dot(z, eye), 1,
+      ]);
+    }
+
+    function mat4Mul(a, b) {
+      const out = new Float32Array(16);
+      for (let c = 0; c < 4; c++) {
+        for (let r = 0; r < 4; r++) {
+          out[c * 4 + r] =
+            a[0 * 4 + r] * b[c * 4 + 0] +
+            a[1 * 4 + r] * b[c * 4 + 1] +
+            a[2 * 4 + r] * b[c * 4 + 2] +
+            a[3 * 4 + r] * b[c * 4 + 3];
+        }
+      }
+      return out;
+    }
+
+    function mat4RotateYScale(angle, scale) {
+      const c = Math.cos(angle) * scale;
+      const s = Math.sin(angle) * scale;
+      return new Float32Array([
+        c, 0, -s, 0,
+        0, scale, 0, 0,
+        s, 0, c, 0,
+        0, 0, 0, 1,
+      ]);
+    }
+
+    // =========================================================================
+    // 2. Procedural Mesh Builder (13 floats/vert: pos3, norm3, col3, attrs4)
+    //    attrs = [emissive, animWeight, phase, materialParam (metal/roughness)]
+    // =========================================================================
+    const FLOATS_PER_VERT = 13;
+
+    class MeshBuilder {
+      constructor() {
+        this.verts = [];
+      }
+
+      pushVert(p, n, c, m) {
+        this.verts.push(
+          p[0], p[1], p[2],
+          n[0], n[1], n[2],
+          c[0], c[1], c[2],
+          m[0], m[1], m[2], m[3]
+        );
+      }
+
+      addTri(p1, p2, p3, c1, c2, c3, m1, m2, m3, flip = false) {
+        const e1 = v3.sub(p2, p1);
+        const e2 = v3.sub(p3, p1);
+        let n = v3.norm(v3.cross(e1, e2));
+        if (flip) n = v3.mul(n, -1);
+        if (flip) {
+          this.pushVert(p1, n, c1, m1);
+          this.pushVert(p3, n, c3, m3);
+          this.pushVert(p2, n, c2, m2);
+        } else {
+          this.pushVert(p1, n, c1, m1);
+          this.pushVert(p2, n, c2, m2);
+          this.pushVert(p3, n, c3, m3);
+        }
+      }
+
+      addQuad(p1, p2, p3, p4, c1, c2, c3, c4, m1, m2, m3, m4) {
+        this.addTri(p1, p2, p3, c1, c2, c3, m1, m2, m3);
+        this.addTri(p1, p3, p4, c1, c3, c4, m1, m3, m4);
+      }
+
+      addLoft(rings, colorFn, metaFn, closeStart = false, closeEnd = false) {
+        const nRings = rings.length;
+        const segs = rings[0].length;
+        for (let i = 0; i < nRings - 1; i++) {
+          const t0 = i / (nRings - 1);
+          const t1 = (i + 1) / (nRings - 1);
+          for (let j = 0; j < segs; j++) {
+            const jn = (j + 1) % segs;
+            const u0 = j / segs;
+            const u1 = (j + 1) / segs;
+            this.addQuad(
+              rings[i][j], rings[i][jn], rings[i + 1][jn], rings[i + 1][j],
+              colorFn(t0, u0), colorFn(t0, u1), colorFn(t1, u1), colorFn(t1, u0),
+              metaFn(t0, u0), metaFn(t0, u1), metaFn(t1, u1), metaFn(t1, u0)
+            );
+          }
+        }
+        if (closeStart) {
+          let center = [0, 0, 0];
+          for (const p of rings[0]) center = v3.add(center, p);
+          center = v3.mul(center, 1 / segs);
+          for (let j = 0; j < segs; j++) {
+            const jn = (j + 1) % segs;
+            this.addTri(
+              center, rings[0][jn], rings[0][j],
+              colorFn(0, 0.5), colorFn(0, (j + 1) / segs), colorFn(0, j / segs),
+              metaFn(0, 0.5), metaFn(0, (j + 1) / segs), metaFn(0, j / segs)
+            );
+          }
+        }
+        if (closeEnd) {
+          const last = rings[nRings - 1];
+          let center = [0, 0, 0];
+          for (const p of last) center = v3.add(center, p);
+          center = v3.mul(center, 1 / segs);
+          for (let j = 0; j < segs; j++) {
+            const jn = (j + 1) % segs;
+            this.addTri(
+              center, last[j], last[jn],
+              colorFn(1, 0.5), colorFn(1, j / segs), colorFn(1, (j + 1) / segs),
+              metaFn(1, 0.5), metaFn(1, j / segs), metaFn(1, (j + 1) / segs)
+            );
+          }
+        }
+      }
+
+      addTube(points, radii, segs, colorFn, metaFn, capStart = true, capEnd = true) {
+        const rings = [];
+        let prevUp = [0, 1, 0];
+        for (let i = 0; i < points.length; i++) {
+          const p = points[i];
+          const tan = i === 0
+            ? v3.norm(v3.sub(points[1], points[0]))
+            : i === points.length - 1
+              ? v3.norm(v3.sub(points[i], points[i - 1]))
+              : v3.norm(v3.sub(points[i + 1], points[i - 1]));
+
+          if (Math.abs(v3.dot(tan, prevUp)) > 0.96) {
+            prevUp = Math.abs(tan[0]) < 0.9 ? [1, 0, 0] : [0, 0, 1];
+          }
+          const right = v3.norm(v3.cross(prevUp, tan));
+          const up = v3.norm(v3.cross(tan, right));
+          prevUp = up;
+
+          const r = radii[i];
+          const ring = [];
+          for (let j = 0; j < segs; j++) {
+            const ang = (j / segs) * Math.PI * 2;
+            const ca = Math.cos(ang) * r;
+            const sa = Math.sin(ang) * r;
+            ring.push([
+              p[0] + right[0] * ca + up[0] * sa,
+              p[1] + right[1] * ca + up[1] * sa,
+              p[2] + right[2] * ca + up[2] * sa,
+            ]);
+          }
+          rings.push(ring);
+        }
+        this.addLoft(rings, colorFn, metaFn, capStart, capEnd);
+      }
+
+      addBox(center, size, rotY, color, meta) {
+        const hx = size[0] * 0.5, hy = size[1] * 0.5, hz = size[2] * 0.5;
+        const c = Math.cos(rotY), s = Math.sin(rotY);
+        const tf = (x, y, z) => [
+          center[0] + x * c - z * s,
+          center[1] + y,
+          center[2] + x * s + z * c,
+        ];
+        const pts = [
+          tf(-hx, -hy, -hz), tf(hx, -hy, -hz), tf(hx, hy, -hz), tf(-hx, hy, -hz),
+          tf(-hx, -hy, hz), tf(hx, -hy, hz), tf(hx, hy, hz), tf(-hx, hy, hz),
+        ];
+        const faces = [
+          [0, 3, 2, 1], [4, 5, 6, 7],
+          [0, 1, 5, 4], [2, 3, 7, 6],
+          [0, 4, 7, 3], [1, 2, 6, 5],
+        ];
+        for (const f of faces) {
+          this.addQuad(
+            pts[f[0]], pts[f[1]], pts[f[2]], pts[f[3]],
+            color, color, color, color,
+            meta, meta, meta, meta
+          );
+        }
+      }
+
+      addPrism(base, dir, len, rBot, rTop, sides, tipH, colorBot, colorTop, metaBot, metaTop) {
+        const d = v3.norm(dir);
+        let ref = Math.abs(d[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
+        const right = v3.norm(v3.cross(ref, d));
+        const up = v3.norm(v3.cross(d, right));
+        const topCenter = v3.add(base, v3.mul(d, len));
+        const tip = v3.add(topCenter, v3.mul(d, tipH));
+
+        const ringB = [], ringT = [];
+        for (let i = 0; i < sides; i++) {
+          const a = (i / sides) * Math.PI * 2;
+          const ca = Math.cos(a), sa = Math.sin(a);
+          const off = [right[0] * ca + up[0] * sa, right[1] * ca + up[1] * sa, right[2] * ca + up[2] * sa];
+          ringB.push(v3.add(base, v3.mul(off, rBot)));
+          ringT.push(v3.add(topCenter, v3.mul(off, rTop)));
+        }
+        for (let i = 0; i < sides; i++) {
+          const inx = (i + 1) % sides;
+          this.addQuad(
+            ringB[i], ringB[inx], ringT[inx], ringT[i],
+            colorBot, colorBot, colorTop, colorTop,
+            metaBot, metaBot, metaTop, metaTop
+          );
+          if (tipH > 0.001) {
+            this.addTri(ringT[i], ringT[inx], tip, colorTop, colorTop, colorTop, metaTop, metaTop, metaTop);
+          } else {
+            this.addTri(ringT[i], ringT[inx], topCenter, colorTop, colorTop, colorTop, metaTop, metaTop, metaTop);
+          }
+          this.addTri(ringB[inx], ringB[i], base, colorBot, colorBot, colorBot, metaBot, metaBot, metaBot);
+        }
+      }
+
+      finalize(smoothNormals = true) {
+        const arr = new Float32Array(this.verts);
+        const vertCount = arr.length / FLOATS_PER_VERT;
+        let minX = Infinity, minY = Infinity, minZ = Infinity;
+        let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+        for (let i = 0; i < arr.length; i += FLOATS_PER_VERT) {
+          const x = arr[i], y = arr[i + 1], z = arr[i + 2];
+          if (x < minX) minX = x; if (x > maxX) maxX = x;
+          if (y < minY) minY = y; if (y > maxY) maxY = y;
+          if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
+        }
+        const cx = (minX + maxX) * 0.5;
+        const cy = (minY + maxY) * 0.5;
+        const cz = (minZ + maxZ) * 0.5;
+        const span = Math.max(maxX - minX, maxY - minY, maxZ - minZ, 0.001);
+        const scale = 2.85 / span;
+        for (let i = 0; i < arr.length; i += FLOATS_PER_VERT) {
+          arr[i] = (arr[i] - cx) * scale;
+          arr[i + 1] = (arr[i + 1] - cy) * scale;
+          arr[i + 2] = (arr[i + 2] - cz) * scale;
+        }
+
+        // Smooth vertex normal welding for organic / curved models
+        if (smoothNormals) {
+          const accum = new Map();
+          for (let i = 0; i < arr.length; i += FLOATS_PER_VERT) {
+            const key = `${Math.round(arr[i] * 400)}_${Math.round(arr[i + 1] * 400)}_${Math.round(arr[i + 2] * 400)}`;
+            let n = accum.get(key);
+            if (!n) {
+              n = [0, 0, 0];
+              accum.set(key, n);
+            }
+            n[0] += arr[i + 3];
+            n[1] += arr[i + 4];
+            n[2] += arr[i + 5];
+          }
+          for (const n of accum.values()) {
+            const l = Math.hypot(n[0], n[1], n[2]) || 1;
+            n[0] /= l; n[1] /= l; n[2] /= l;
+          }
+          for (let i = 0; i < arr.length; i += FLOATS_PER_VERT) {
+            const key = `${Math.round(arr[i] * 400)}_${Math.round(arr[i + 1] * 400)}_${Math.round(arr[i + 2] * 400)}`;
+            const n = accum.get(key);
+            arr[i + 3] = n[0];
+            arr[i + 4] = n[1];
+            arr[i + 5] = n[2];
+          }
+        }
+
+        return { data: arr, vertCount, triCount: Math.floor(vertCount / 3) };
+      }
+    }
+
+    // =========================================================================
+    // 3. High-Detail Procedural Model Generators
+    // =========================================================================
+    const NAME_PREFIX = [
+      "Abyssal", "Astral", "Luminous", "Chromatic", "Vortex", "Cryo",
+      "Obsidian", "Solaris", "Quantum", "Pelagic", "Hyperion", "Aether"
+    ];
+
+    const GENERATORS = {
+      jellyfish(rng) {
+        const mb = new MeshBuilder();
+        const hue = rng();
+        const hue2 = (hue + 0.18 + rng() * 0.25) % 1;
+        const bellSegs = 48;
+        const bellRings = 24;
+        const ribs = 8 + Math.floor(rng() * 10);
+        const bellHeight = 0.95 + rng() * 0.5;
+        const bellRadius = 1.05 + rng() * 0.45;
+
+        const rings = [];
+        for (let i = 0; i < bellRings; i++) {
+          const t = i / (bellRings - 1);
+          const phi = t * Math.PI * 0.62;
+          const rBase = Math.sin(phi) * bellRadius;
+          const yBase = Math.cos(phi) * bellHeight;
+          const ring = [];
+          for (let j = 0; j < bellSegs; j++) {
+            const ang = (j / bellSegs) * Math.PI * 2;
+            const ribWave = 1 + 0.075 * Math.sin(ang * ribs) * Math.sin(t * Math.PI);
+            const r = rBase * ribWave;
+            const y = yBase - 0.055 * Math.cos(ang * ribs) * Math.pow(t, 2);
+            ring.push([Math.cos(ang) * r, y, Math.sin(ang) * r]);
+          }
+          rings.push(ring);
+        }
+        mb.addLoft(
+          rings,
+          (t, u) => hslToRgb(hue + t * 0.12, 0.85, 0.42 + 0.18 * Math.sin(u * Math.PI * ribs)),
+          (t) => [0.25 + 1.15 * Math.pow(t, 2.2), 0.35 * t, t * 2.0, 0.15],
+          true, false
+        );
+
+        // Bioluminescent oral arms (frilly central ribbons)
+        for (let a = 0; a < 4; a++) {
+          const baseAng = (a / 4) * Math.PI * 2;
+          const pts = [], radii = [];
+          for (let s = 0; s < 20; s++) {
+            const st = s / 19;
+            const ang = baseAng + st * 2.2;
+            const r = 0.18 * Math.sin(st * Math.PI) + 0.05;
+            pts.push([Math.cos(ang) * r, 0.1 - st * 1.4, Math.sin(ang) * r]);
+            radii.push(0.065 * (1 - st * 0.7) * (1 + 0.35 * Math.sin(st * 18)));
+          }
+          mb.addTube(
+            pts, radii, 8,
+            (t) => hslToRgb(hue2, 0.95, 0.65),
+            (t) => [1.3 + t * 0.9, 0.25 + t * 0.8, a + t * 3.0, 0.1]
+          );
+        }
+
+        // Trailing tentacles
+        const nTentacles = 12 + Math.floor(rng() * 10);
+        for (let k = 0; k < nTentacles; k++) {
+          const ang = (k / nTentacles) * Math.PI * 2 + (rng() - 0.5) * 0.18;
+          const rad = bellRadius * (0.4 + 0.48 * rng());
+          const len = 1.7 + rng() * 1.6;
+          const pts = [], radii = [];
+          const steps = 22;
+          const swirl = (rng() - 0.5) * 0.65;
+          for (let s = 0; s < steps; s++) {
+            const st = s / (steps - 1);
+            const a = ang + swirl * st;
+            const r = rad * (1 - st * 0.22) + Math.sin(st * 6 + k) * 0.07;
+            pts.push([Math.cos(a) * r, 0.12 - st * len, Math.sin(a) * r]);
+            radii.push((1 - st * 0.85) * (0.032 + rng() * 0.02));
+          }
+          mb.addTube(
+            pts, radii, 7,
+            (t) => hslToRgb(hue2 + t * 0.15, 0.9, 0.55),
+            (t) => [0.55 + t * 1.25, 0.2 + t * 0.95, k * 0.7 + t * 3.0, 0.08]
+          );
+        }
+
+        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Medusa`;
+        return { mesh: mb.finalize(true), name, animMode: 1, sss: 0.85, accent: hslToRgb(hue2, 1, 0.6) };
+      },
+
+      leviathan(rng) {
+        const mb = new MeshBuilder();
+        const hue = rng();
+        const hueGlow = (hue + 0.45) % 1;
+        const bodyLen = 2.7 + rng() * 1.1;
+        const wingSpan = 1.9 + rng() * 1.3;
+        const segs = 32;
+        const ringSegs = 28;
+
+        const rings = [];
+        for (let i = 0; i < segs; i++) {
+          const t = i / (segs - 1);
+          const z = (0.5 - t) * bodyLen;
+          const wingEnv = Math.sin(Math.pow(t, 0.72) * Math.PI);
+          const halfW = 0.18 + wingSpan * Math.pow(wingEnv, 1.38);
+          const halfH = 0.05 + 0.23 * Math.sin(t * Math.PI) * (1 - t * 0.4);
+          const ring = [];
+          for (let j = 0; j < ringSegs; j++) {
+            const ang = (j / ringSegs) * Math.PI * 2;
+            const ca = Math.cos(ang);
+            const sa = Math.sin(ang);
+            const wingCurve = Math.pow(Math.abs(ca), 1.6) * 0.18 * wingEnv;
+            ring.push([
+              ca * halfW,
+              sa * halfH - wingCurve + Math.sin(t * Math.PI * 2) * 0.04,
+              z - Math.abs(ca) * 0.45 * wingEnv,
+            ]);
+          }
+          rings.push(ring);
+        }
+
+        mb.addLoft(
+          rings,
+          (t, u) => {
+            const stripe = Math.sin(u * Math.PI * 6) > 0.72 ? 0.22 : 0;
+            return hslToRgb(hue + stripe, 0.72, 0.3 + 0.24 * (1 - t));
+          },
+          (t, u) => {
+            const edgeGlow = Math.abs(Math.cos(u * Math.PI * 2)) > 0.88 ? 1.55 : 0.12;
+            return [edgeGlow, 0.75, t * 4.0, 0.25];
+          },
+          true, true
+        );
+
+        const tailPts = [], tailRad = [];
+        for (let i = 0; i < 18; i++) {
+          const st = i / 17;
+          tailPts.push([
+            Math.sin(st * 4.5) * 0.12 * st,
+            Math.cos(st * 3.0) * 0.08 * st,
+            -bodyLen * 0.48 - st * 1.45,
+          ]);
+          tailRad.push(0.055 * (1 - st * 0.88));
+        }
+        mb.addTube(
+          tailPts, tailRad, 8,
+          (t) => hslToRgb(hueGlow, 0.9, 0.55),
+          (t) => [0.9 + t * 1.1, 0.85, t * 5.0, 0.2]
+        );
+
+        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Manta`;
+        return { mesh: mb.finalize(true), name, animMode: 2, sss: 0.55, accent: hslToRgb(hueGlow, 1, 0.6) };
+      },
+
+      flora(rng) {
+        const mb = new MeshBuilder();
+        const hue = rng();
+        const tipHue = (hue + 0.32 + rng() * 0.2) % 1;
+        const maxDepth = 4;
+
+        function growBranch(pos, dir, len, rad, depth) {
+          const steps = 8;
+          const pts = [], radii = [];
+          let cur = pos;
+          let curDir = v3.norm(dir);
+          const bend = [(rng() - 0.5) * 0.25, 0.15, (rng() - 0.5) * 0.25];
+          for (let i = 0; i < steps; i++) {
+            const t = i / (steps - 1);
+            pts.push(cur);
+            radii.push(rad * (1 - t * 0.42));
+            curDir = v3.norm(v3.add(curDir, v3.mul(bend, 0.22)));
+            cur = v3.add(cur, v3.mul(curDir, len / (steps - 1)));
+          }
+          mb.addTube(
+            pts, radii, depth === 0 ? 14 : 9,
+            (t) => hslToRgb(hue + depth * 0.04 + t * 0.05, 0.6, 0.28 + depth * 0.06),
+            (t) => [depth >= maxDepth - 1 ? 0.5 : 0.05, 0.15 * (depth + t), depth * 1.2, 0.1]
+          );
+
+          if (depth < maxDepth) {
+            const branches = depth === 0 ? 3 + Math.floor(rng() * 3) : 2 + Math.floor(rng() * 2);
+            for (let b = 0; b < branches; b++) {
+              const ang = (b / branches) * Math.PI * 2 + rng() * 0.6;
+              const spread = 0.45 + rng() * 0.45;
+              const newDir = v3.norm([
+                curDir[0] + Math.cos(ang) * spread,
+                curDir[1] + 0.45,
+                curDir[2] + Math.sin(ang) * spread,
+              ]);
+              growBranch(cur, newDir, len * (0.65 + rng() * 0.15), rad * 0.62, depth + 1);
+            }
+          } else {
+            mb.addPrism(
+              cur, curDir, 0.14, rad * 1.6, rad * 2.2, 8, 0.1,
+              hslToRgb(tipHue, 0.95, 0.58), hslToRgb(tipHue, 1.0, 0.78),
+              [1.6, 0.3, rng() * 6, 0.1], [2.4, 0.35, rng() * 6, 0.1]
+            );
+          }
+        }
+
+        growBranch([0, -1.2, 0], [0, 1, 0], 1.1, 0.22, 0);
+        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Coral`;
+        return { mesh: mb.finalize(true), name, animMode: 1, sss: 0.6, accent: hslToRgb(tipHue, 1, 0.6) };
+      },
+
+      crystal(rng) {
+        const mb = new MeshBuilder();
+        const hue = rng();
+        const sides = 5 + Math.floor(rng() * 4);
+        const count = 18 + Math.floor(rng() * 14);
+
+        for (let i = 0; i < 7; i++) {
+          const a = (i / 7) * Math.PI * 2;
+          mb.addPrism(
+            [Math.cos(a) * 0.25, -0.5, Math.sin(a) * 0.25],
+            [Math.cos(a) * 0.3, 0.8, Math.sin(a) * 0.3],
+            0.45, 0.68, 0.42, 6, 0.15,
+            [0.06, 0.07, 0.1], [0.11, 0.13, 0.18],
+            [0, 0, 0, 0.25], [0, 0, 0, 0.25]
+          );
+        }
+
+        for (let i = 0; i < count; i++) {
+          const isHero = i < 4;
+          const ang = rng() * Math.PI * 2;
+          const tilt = isHero ? rng() * 0.3 : 0.25 + rng() * 0.85;
+          const dir = [
+            Math.cos(ang) * Math.sin(tilt),
+            Math.cos(tilt),
+            Math.sin(ang) * Math.sin(tilt),
+          ];
+          const base = [
+            Math.cos(ang) * (isHero ? 0.1 : 0.38 * rng()),
+            -0.35 + rng() * 0.2,
+            Math.sin(ang) * (isHero ? 0.1 : 0.38 * rng()),
+          ];
+          const len = isHero ? 1.55 + rng() * 0.85 : 0.6 + rng() * 0.95;
+          const r = isHero ? 0.22 + rng() * 0.12 : 0.08 + rng() * 0.1;
+          const c1 = hslToRgb(hue + (rng() - 0.5) * 0.08, 0.85, 0.4);
+          const c2 = hslToRgb(hue + 0.08, 0.98, 0.72);
+          mb.addPrism(
+            base, dir, len, r, r * 0.78, sides, len * 0.28,
+            c1, c2,
+            [0.4, 0.04 * (i % 4), i * 0.5, 0.85],
+            [1.8, 0.06 * (i % 4), i * 0.5, 0.95]
+          );
+        }
+
+        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Geode`;
+        return { mesh: mb.finalize(false), name, animMode: 3, sss: 0.45, accent: hslToRgb(hue, 1, 0.65) };
+      },
+
+      spaceship(rng) {
+        const mb = new MeshBuilder();
+        const hullHue = rng();
+        const engineHue = (hullHue + 0.5) % 1;
+        const hullCol = hslToRgb(hullHue, 0.2, 0.58);
+        const darkCol = hslToRgb(hullHue, 0.18, 0.22);
+        const accentCol = hslToRgb(engineHue, 0.88, 0.52);
+        const glowCol = hslToRgb(engineHue, 1.0, 0.78);
+
+        const hullMeta = [0.0, 0.05, 0.0, 0.9];
+        const darkMeta = [0.0, 0.05, 0.0, 0.7];
+        const glowMeta = [2.6, 0.05, 1.0, 0.2];
+
+        const segs = 16;
+        const rings = [];
+        for (let i = 0; i < segs; i++) {
+          const t = i / (segs - 1);
+          const z = (0.5 - t) * 3.0;
+          const w = 0.12 + 0.36 * Math.sin(Math.pow(t, 0.65) * Math.PI);
+          const h = 0.08 + 0.22 * Math.sin(t * Math.PI);
+          const ring = [];
+          for (let j = 0; j < 10; j++) {
+            const a = (j / 10) * Math.PI * 2 + Math.PI / 10;
+            ring.push([Math.cos(a) * w, Math.sin(a) * h, z]);
+          }
+          rings.push(ring);
+        }
+        mb.addLoft(
+          rings,
+          (t) => (t > 0.2 && t < 0.42 ? accentCol : hullCol),
+          () => hullMeta,
+          true, true
+        );
+
+        mb.addBox([0, 0.2, 0.35], [0.28, 0.16, 0.75], 0, glowCol, [1.2, 0.05, 0, 0.95]);
+
+        const wingSpan = 1.3 + rng() * 0.9;
+        const wingSweep = 0.4 + rng() * 0.5;
+        for (const side of [-1, 1]) {
+          const p1 = [side * 0.25, 0.04, 0.3];
+          const p2 = [side * wingSpan, -0.05, -wingSweep];
+          const p3 = [side * wingSpan, -0.05, -wingSweep - 0.55];
+          const p4 = [side * 0.25, 0.04, -0.85];
+          const thick = [0, -0.08, 0];
+          mb.addQuad(p1, p2, p3, p4, hullCol, accentCol, accentCol, hullCol, hullMeta, hullMeta, hullMeta, hullMeta);
+          mb.addQuad(
+            v3.add(p4, thick), v3.add(p3, thick), v3.add(p2, thick), v3.add(p1, thick),
+            darkCol, darkCol, darkCol, darkCol, darkMeta, darkMeta, darkMeta, darkMeta
+          );
+          mb.addBox([side * wingSpan, 0.02, -wingSweep - 0.2], [0.08, 0.12, 0.7], 0, darkCol, darkMeta);
+        }
+
+        const nEngines = rng() > 0.5 ? 2 : 4;
+        for (let e = 0; e < nEngines; e++) {
+          const side = e % 2 === 0 ? -1 : 1;
+          const row = Math.floor(e / 2);
+          const ex = side * (0.38 + row * 0.32);
+          const ey = row === 0 ? 0.05 : -0.14;
+          mb.addPrism([ex, ey, -1.1], [0, 0, 1], 0.9, 0.14, 0.16, 10, 0.05, darkCol, hullCol, darkMeta, hullMeta);
+          mb.addPrism([ex, ey, -1.12], [0, 0, -1], 0.24, 0.11, 0.02, 10, 0.08, glowCol, glowCol, glowMeta, glowMeta);
+        }
+
+        mb.addBox([0, 0.34, -0.8], [0.06, 0.42, 0.75], 0, accentCol, hullMeta);
+
+        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Interceptor`;
+        return { mesh: mb.finalize(false), name, animMode: 3, sss: 0.0, accent: glowCol };
+      },
+
+      relic(rng) {
+        const mb = new MeshBuilder();
+        const hue = rng();
+        const hue2 = (hue + 0.5) % 1;
+        const p = 2 + Math.floor(rng() * 3);
+        const q = 3 + Math.floor(rng() * 5);
+        const steps = 160;
+        const pts = [], radii = [];
+        for (let i = 0; i <= steps; i++) {
+          const t = (i / steps) * Math.PI * 2;
+          const r = 1.0 + 0.38 * Math.cos(q * t);
+          pts.push([
+            r * Math.cos(p * t),
+            0.42 * Math.sin(q * t),
+            r * Math.sin(p * t),
+          ]);
+          radii.push(0.11 + 0.04 * Math.sin(q * t * 2));
+        }
+        mb.addTube(
+          pts, radii, 14,
+          (t) => hslToRgb(hue + t * 0.15, 0.7, 0.48),
+          (t) => [Math.sin(t * Math.PI * 16) > 0.65 ? 1.85 : 0.1, 0.05, t * 6.0, 0.92],
+          false, false
+        );
+
+        mb.addPrism([0, -0.35, 0], [0, 1, 0], 0.35, 0.28, 0.28, 8, 0.3,
+          hslToRgb(hue2, 0.95, 0.6), hslToRgb(hue2, 1.0, 0.8),
+          [2.0, 0.2, 0, 0.6], [2.5, 0.2, 1, 0.6]
+        );
+        mb.addPrism([0, -0.35, 0], [0, -1, 0], 0.01, 0.28, 0.28, 8, 0.3,
+          hslToRgb(hue2, 0.95, 0.6), hslToRgb(hue2, 1.0, 0.8),
+          [2.0, 0.2, 0, 0.6], [2.5, 0.2, 1, 0.6]
+        );
+
+        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Toroid (${p}:${q})`;
+        return { mesh: mb.finalize(true), name, animMode: 3, sss: 0.15, accent: hslToRgb(hue2, 1, 0.65) };
+      },
+
+      architecture(rng) {
+        const mb = new MeshBuilder();
+        const hue = rng();
+        const glowHue = (hue + 0.12) % 1;
+        const baseCol = hslToRgb(hue, 0.16, 0.42);
+        const trimCol = hslToRgb(hue, 0.3, 0.62);
+        const glowCol = hslToRgb(glowHue, 0.95, 0.72);
+        const tiers = 4 + Math.floor(rng() * 4);
+        const sides = [4, 6, 8][Math.floor(rng() * 3)];
+
+        let y = -1.3;
+        let rad = 1.05;
+        for (let t = 0; t < tiers; t++) {
+          const h = 0.45 + rng() * 0.45;
+          mb.addPrism(
+            [0, y, 0], [0, 1, 0], h, rad, rad * 0.86, sides, t === tiers - 1 ? 0.65 : 0.05,
+            baseCol, trimCol, [0, 0, 0, 0.55], [0.1, 0, 0, 0.65]
+          );
+          mb.addPrism(
+            [0, y + h * 0.75, 0], [0, 1, 0], 0.08, rad * 0.92, rad * 0.92, sides, 0,
+            glowCol, glowCol, [2.1, 0, t, 0.2], [2.1, 0, t, 0.2]
+          );
+          if (t < tiers - 1) {
+            for (let s = 0; s < sides; s++) {
+              const a = (s / sides) * Math.PI * 2;
+              const bx = Math.cos(a) * rad * 0.95;
+              const bz = Math.sin(a) * rad * 0.95;
+              mb.addPrism(
+                [bx, y, bz], [0, 1, 0], h * 0.9, 0.12, 0.06, 4, 0.15,
+                trimCol, glowCol, [0.1, 0, 0, 0.6], [1.4, 0, s, 0.3]
+              );
+            }
+          }
+          y += h;
+          rad *= 0.74;
+        }
+
+        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Citadel`;
+        return { mesh: mb.finalize(false), name, animMode: 0, sss: 0.0, accent: glowCol };
+      },
+
+      serpent(rng) {
+        const mb = new MeshBuilder();
+        const hue = rng();
+        const glowHue = (hue + 0.42) % 1;
+        const steps = 48;
+        const pts = [], rads = [];
+        const len = 3.2 + rng() * 0.8;
+
+        for (let i = 0; i < steps; i++) {
+          const t = i / (steps - 1);
+          const z = (0.5 - t) * len;
+          const x = Math.sin(t * Math.PI * 2.5) * 0.28;
+          const y = Math.cos(t * Math.PI * 2.0) * 0.14;
+          pts.push([x, y, z]);
+          const bodyEnv = Math.sin(Math.pow(t, 0.55) * Math.PI);
+          rads.push(0.03 + 0.2 * bodyEnv + (t < 0.14 ? 0.06 : 0));
+        }
+
+        mb.addTube(
+          pts, rads, 14,
+          (t, u) => {
+            const band = Math.sin(t * Math.PI * 14) > 0.45 ? 0.18 : 0;
+            return hslToRgb(hue + band, 0.78, 0.34 + 0.22 * (1 - t));
+          },
+          (t, u) => [Math.sin(t * Math.PI * 14) > 0.65 ? 1.5 : 0.12, 0.65 + 0.35 * t, t * 5.0, 0.25]
+        );
+
+        // Dorsal fin crest along the back
+        const finPts = [], finRads = [];
+        for (let i = 2; i < steps - 4; i++) {
+          const t = i / (steps - 1);
+          const p = pts[i];
+          finPts.push([p[0], p[1] + rads[i] * 1.15 + 0.08 * Math.sin(t * Math.PI), p[2]]);
+          finRads.push(0.025 + 0.04 * Math.sin(t * Math.PI));
+        }
+        mb.addTube(
+          finPts, finRads, 6,
+          (t) => hslToRgb(glowHue, 0.95, 0.62),
+          (t) => [1.4, 0.75, t * 5.0, 0.1]
+        );
+
+        // Glowing whisker barbels at head
+        const head = pts[1];
+        for (const side of [-1, 1]) {
+          const wPts = [], wRads = [];
+          for (let s = 0; s < 10; s++) {
+            const st = s / 9;
+            wPts.push([
+              head[0] + side * (0.12 + st * 0.45),
+              head[1] - st * 0.22 + Math.sin(st * 4) * 0.06,
+              head[2] + 0.15 - st * 0.55,
+            ]);
+            wRads.push(0.028 * (1 - st * 0.8));
+          }
+          mb.addTube(wPts, wRads, 6, () => hslToRgb(glowHue, 1, 0.7), (t) => [1.8, 0.9, t * 3, 0.1]);
+        }
+
+        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Leviathan`;
+        return { mesh: mb.finalize(true), name, animMode: 4, sss: 0.6, accent: hslToRgb(glowHue, 1, 0.65) };
+      },
+
+      butterfly(rng) {
+        const mb = new MeshBuilder();
+        const hue = rng();
+        const glowHue = (hue + 0.35 + rng() * 0.2) % 1;
+        const bodyCol = hslToRgb(hue, 0.45, 0.28);
+        const wingCol = hslToRgb(hue, 0.88, 0.52);
+        const glowCol = hslToRgb(glowHue, 1.0, 0.68);
+
+        // Slender segmented body
+        const bPts = [], bRads = [];
+        for (let i = 0; i < 14; i++) {
+          const t = i / 13;
+          bPts.push([0, Math.sin(t * Math.PI) * 0.06, (0.5 - t) * 1.4]);
+          bRads.push(0.04 + 0.075 * Math.sin(t * Math.PI));
+        }
+        mb.addTube(bPts, bRads, 10, () => bodyCol, () => [0.2, 0.05, 0, 0.3]);
+
+        // Feathered antennae
+        for (const side of [-1, 1]) {
+          const aPts = [], aRads = [];
+          for (let s = 0; s < 8; s++) {
+            const st = s / 7;
+            aPts.push([side * (0.04 + st * 0.32), 0.06 + st * 0.36, 0.68 + st * 0.35]);
+            aRads.push(0.018 * (1 - st * 0.65));
+          }
+          mb.addTube(aPts, aRads, 5, () => glowCol, () => [1.5, 0.2, side, 0.1]);
+        }
+
+        // Upper & Lower sculpted wings (symmetrical)
+        const wingSpan = 1.35 + rng() * 0.45;
+        for (const side of [-1, 1]) {
+          const segs = 18;
+          const rings = [];
+          for (let i = 0; i < segs; i++) {
+            const t = i / (segs - 1);
+            const x = side * (0.06 + t * wingSpan);
+            const zFront = 0.42 + Math.sin(t * Math.PI * 0.85) * 0.55;
+            const zBack = -0.75 - Math.sin(t * Math.PI) * 0.45;
+            const arch = Math.sin(t * Math.PI) * 0.16;
+            const ring = [];
+            const chordSegs = 8;
+            for (let j = 0; j < chordSegs; j++) {
+              const u = j / (chordSegs - 1);
+              const z = zFront + (zBack - zFront) * u;
+              const y = arch + Math.sin(u * Math.PI) * 0.04;
+              ring.push([x, y, z]);
+            }
+            rings.push(ring);
+          }
+          mb.addLoft(
+            rings,
+            (t, u) => {
+              const spot = Math.hypot(t - 0.62, u - 0.35) < 0.2 ? 1 : 0;
+              return spot ? glowCol : hslToRgb(hue + t * 0.16, 0.9, 0.48 + 0.15 * u);
+            },
+            (t, u) => {
+              const vein = Math.sin(u * Math.PI * 6) > 0.78 || t > 0.88 ? 1.55 : 0.25;
+              return [vein, 0.95, side * 0.2, 0.15];
+            },
+            false, false
+          );
+        }
+
+        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Seraph`;
+        return { mesh: mb.finalize(true), name, animMode: 5, sss: 0.85, accent: glowCol };
+      },
+
+      squid(rng) {
+        const mb = new MeshBuilder();
+        const hue = rng();
+        const glowHue = (hue + 0.28 + rng() * 0.25) % 1;
+
+        // Torpedo mantle
+        const mRings = [];
+        const mSegs = 24, rSegs = 24;
+        for (let i = 0; i < mSegs; i++) {
+          const t = i / (mSegs - 1);
+          const y = 1.25 - t * 1.65;
+          const r = 0.04 + 0.42 * Math.sin(Math.pow(t, 0.65) * Math.PI);
+          const ring = [];
+          for (let j = 0; j < rSegs; j++) {
+            const a = (j / rSegs) * Math.PI * 2;
+            const fin = t < 0.42 ? 1 + 0.75 * Math.sin((t / 0.42) * Math.PI) * Math.pow(Math.abs(Math.cos(a)), 6) : 1;
+            ring.push([Math.cos(a) * r * fin, y, Math.sin(a) * r]);
+          }
+          mRings.push(ring);
+        }
+        mb.addLoft(
+          mRings,
+          (t, u) => hslToRgb(hue + t * 0.1, 0.82, 0.42 + 0.18 * Math.sin(u * Math.PI * 4)),
+          (t, u) => [Math.sin(u * Math.PI * 8) > 0.8 ? 1.5 : 0.25, 0.25 * (1 - t), t * 2.0, 0.18],
+          true, false
+        );
+
+        // 10 flowing tentacles + 2 long feeding arms
+        const nArms = 12;
+        for (let k = 0; k < nArms; k++) {
+          const isLong = k === 0 || k === 6;
+          const ang = (k / nArms) * Math.PI * 2;
+          const rad = 0.24;
+          const armLen = isLong ? 2.1 : 1.35 + rng() * 0.35;
+          const pts = [], rads = [];
+          for (let s = 0; s < 18; s++) {
+            const st = s / 17;
+            const r = rad * (1 + st * 0.6) + Math.sin(st * 5 + k) * 0.09;
+            pts.push([Math.cos(ang + st * 0.4) * r, -0.35 - st * armLen, Math.sin(ang + st * 0.4) * r]);
+            rads.push((isLong ? 0.048 : 0.036) * (1 - st * 0.85));
+          }
+          mb.addTube(
+            pts, rads, 7,
+            (t) => hslToRgb(glowHue + t * 0.12, 0.92, 0.56),
+            (t) => [0.6 + t * 1.35, 0.35 + t * 0.85, k * 0.6 + t * 3.0, 0.1]
+          );
+        }
+
+        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Kraken`;
+        return { mesh: mb.finalize(true), name, animMode: 1, sss: 0.78, accent: hslToRgb(glowHue, 1, 0.62) };
+      },
+
+      shell(rng) {
+        const mb = new MeshBuilder();
+        const hue = rng();
+        const glowHue = (hue + 0.35) % 1;
+        const steps = 95;
+        const ringSegs = 24;
+        const turns = 2.2 + rng() * 1.1;
+        const growth = 0.24 + rng() * 0.06;
+        const ribs = 16 + Math.floor(rng() * 16);
+
+        const rings = [];
+        for (let i = 0; i < steps; i++) {
+          const t = i / (steps - 1);
+          const theta = t * Math.PI * 2 * turns;
+          const rSpiral = 0.08 * Math.exp(growth * theta);
+          const tubeR = rSpiral * 0.52;
+          const cx = Math.cos(theta) * rSpiral;
+          const cy = Math.sin(theta) * rSpiral;
+          const cz = (t - 0.6) * 0.15;
+
+          const dirX = Math.cos(theta), dirY = Math.sin(theta);
+          const ribMod = 1 + 0.09 * Math.sin(theta * ribs);
+          const ring = [];
+          for (let j = 0; j < ringSegs; j++) {
+            const phi = (j / ringSegs) * Math.PI * 2;
+            const localR = tubeR * ribMod * (0.85 + 0.15 * Math.cos(phi));
+            ring.push([
+              cx + dirX * Math.cos(phi) * localR,
+              cy + dirY * Math.cos(phi) * localR,
+              cz + Math.sin(phi) * localR,
+            ]);
+          }
+          rings.push(ring);
+        }
+        mb.addLoft(
+          rings,
+          (t, u) => hslToRgb(hue + t * 0.18, 0.65, 0.45 + 0.2 * Math.sin(u * Math.PI * 4)),
+          (t, u) => [t > 0.9 ? 0.6 : 0.05, 0.05, t * 4.0, 0.45],
+          true, true
+        );
+
+        // Glowing tentacles emerging from aperture
+        const lastTheta = Math.PI * 2 * turns;
+        const lastR = 0.08 * Math.exp(growth * lastTheta);
+        const mouth = [Math.cos(lastTheta) * lastR, Math.sin(lastTheta) * lastR, 0.06];
+        for (let k = 0; k < 6; k++) {
+          const pts = [], rads = [];
+          for (let s = 0; s < 14; s++) {
+            const st = s / 13;
+            const spread = (k - 2.5) * 0.18;
+            pts.push([
+              mouth[0] + Math.cos(lastTheta + 1.2 + spread) * st * 0.9,
+              mouth[1] + Math.sin(lastTheta + 1.2 + spread) * st * 0.9 - st * 0.3,
+              mouth[2] + Math.sin(st * 5 + k) * 0.2,
+            ]);
+            rads.push(0.055 * (1 - st * 0.85));
+          }
+          mb.addTube(
+            pts, rads, 7,
+            (t) => hslToRgb(glowHue, 0.95, 0.6),
+            (t) => [0.8 + t * 1.4, 0.65, k + t * 2.0, 0.1]
+          );
+        }
+
+        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Nautilus`;
+        return { mesh: mb.finalize(true), name, animMode: 1, sss: 0.45, accent: hslToRgb(glowHue, 1, 0.6) };
+      },
+
+      station(rng) {
+        const mb = new MeshBuilder();
+        const hue = rng();
+        const coreHue = (hue + 0.5) % 1;
+        const metalCol = hslToRgb(hue, 0.18, 0.55);
+        const darkCol = hslToRgb(hue, 0.15, 0.25);
+        const glowCol = hslToRgb(coreHue, 1.0, 0.72);
+
+        const nRings = 2 + Math.floor(rng() * 2);
+        for (let rIdx = 0; rIdx < nRings; rIdx++) {
+          const R = 0.95 + rIdx * 0.42;
+          const tiltX = (rng() - 0.5) * 1.4;
+          const tiltZ = (rng() - 0.5) * 1.4;
+          const cx = Math.cos(tiltX), sx = Math.sin(tiltX);
+          const cz = Math.cos(tiltZ), sz = Math.sin(tiltZ);
+          const segs = 64;
+          const pts = [], rads = [];
+          for (let i = 0; i <= segs; i++) {
+            const a = (i / segs) * Math.PI * 2;
+            let x = Math.cos(a) * R, y = 0, z = Math.sin(a) * R;
+            // Rotate X then Z
+            const y1 = y * cx - z * sx, z1 = y * sx + z * cx;
+            const x2 = x * cz - y1 * sz, y2 = x * sz + y1 * cz;
+            pts.push([x2, y2, z1]);
+            rads.push(0.055 + (i % 8 === 0 ? 0.035 : 0));
+          }
+          mb.addTube(
+            pts, rads, 8,
+            (t) => (Math.floor(t * 24) % 4 === 0 ? glowCol : metalCol),
+            (t) => [Math.floor(t * 24) % 4 === 0 ? 1.8 : 0.05, 0.04, rIdx, 0.9],
+            false, false
+          );
+        }
+
+        // Central Dyson / Fusion Core + Spire
+        mb.addPrism([0, -0.7, 0], [0, 1, 0], 1.4, 0.1, 0.1, 8, 0.35, darkCol, metalCol, [0, 0, 0, 0.8], [0.2, 0, 0, 0.9]);
+        mb.addPrism([0, -0.25, 0], [0, 1, 0], 0.5, 0.34, 0.34, 12, 0.25, glowCol, glowCol, [2.6, 0.1, 0, 0.3], [2.6, 0.1, 0, 0.3]);
+
+        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Dyson Gate`;
+        return { mesh: mb.finalize(false), name, animMode: 3, sss: 0.0, accent: glowCol };
+      },
+
+      island(rng) {
+        const mb = new MeshBuilder();
+        const rockHue = 0.06 + rng() * 0.08;
+        const floraHue = 0.28 + rng() * 0.16;
+        const waterHue = 0.52 + rng() * 0.1;
+        const rockDark = hslToRgb(rockHue, 0.22, 0.22);
+        const rockLight = hslToRgb(rockHue, 0.2, 0.38);
+        const grassCol = hslToRgb(floraHue, 0.55, 0.4);
+        const glowWater = hslToRgb(waterHue, 0.95, 0.65);
+
+        // Jagged inverted rocky underside
+        mb.addPrism([0, 0.25, 0], [0, -1, 0], 1.35, 1.25, 0.18, 7, 0.45, rockLight, rockDark, [0, 0, 0, 0.2], [0, 0, 0, 0.2]);
+        for (let i = 0; i < 6; i++) {
+          const a = (i / 6) * Math.PI * 2 + rng() * 0.4;
+          const dist = 0.55 + rng() * 0.35;
+          mb.addPrism(
+            [Math.cos(a) * dist, 0.15, Math.sin(a) * dist],
+            [Math.cos(a) * 0.15, -1, Math.sin(a) * 0.15],
+            0.7 + rng() * 0.5, 0.42, 0.08, 5, 0.3,
+            rockLight, rockDark, [0, 0, 0, 0.2], [0, 0, 0, 0.2]
+          );
+        }
+
+        // Lush top plateau
+        mb.addPrism([0, 0.22, 0], [0, 1, 0], 0.18, 1.32, 1.22, 9, 0.05, rockLight, grassCol, [0, 0, 0, 0.15], [0, 0, 0, 0.1]);
+
+        // Glowing obelisk & floating waterfall stream
+        mb.addPrism([0, 0.4, 0], [0, 1, 0], 0.95, 0.18, 0.08, 4, 0.22, rockLight, glowWater, [0.1, 0, 0, 0.4], [2.2, 0.1, 0, 0.5]);
+        mb.addBox([0.65, -0.35, 0], [0.16, 1.4, 0.08], 0, glowWater, [1.8, 0.25, 1, 0.2]);
+
+        // Mini trees on top
+        for (let t = 0; t < 4; t++) {
+          const a = (t / 4) * Math.PI * 2 + 0.5;
+          const tx = Math.cos(a) * 0.65, tz = Math.sin(a) * 0.65;
+          mb.addPrism([tx, 0.4, tz], [0, 1, 0], 0.35, 0.05, 0.03, 5, 0, rockDark, rockDark, [0, 0, 0, 0.1], [0, 0, 0, 0.1]);
+          mb.addPrism([tx, 0.68, tz], [0, 1, 0], 0.38, 0.26, 0.06, 6, 0.15, grassCol, hslToRgb(floraHue, 0.7, 0.55), [0.1, 0.2, t, 0.1], [0.4, 0.2, t, 0.1]);
+        }
+
+        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Sky Isle`;
+        return { mesh: mb.finalize(false), name, animMode: 3, sss: 0.15, accent: glowWater };
+      },
+
+      fractal(rng) {
+        const mb = new MeshBuilder();
+        const hue = rng();
+        const glowHue = (hue + 0.42) % 1;
+        const strutCol = hslToRgb(hue, 0.35, 0.58);
+        const nodeCol = hslToRgb(glowHue, 1.0, 0.72);
+
+        function subOct(center, size, depth) {
+          if (depth === 0) {
+            mb.addBox(center, [size, size, size], depth * 0.3, strutCol, [0.08, 0.05, 0, 0.9]);
+            return;
+          }
+          const off = size * 0.52;
+          const dirs = [
+            [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]
+          ];
+          mb.addBox(center, [size * 0.55, size * 0.55, size * 0.55], 0, depth === 2 ? nodeCol : strutCol, [depth === 2 ? 1.8 : 0.1, 0.05, depth, 0.85]);
+          for (const d of dirs) {
+            if (depth === 1 && rng() < 0.25) continue;
+            subOct(
+              [center[0] + d[0] * off, center[1] + d[1] * off, center[2] + d[2] * off],
+              size * 0.46,
+              depth - 1
+            );
+          }
+        }
+        subOct([0, 0, 0], 1.05, 2);
+
+        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Lattice`;
+        return { mesh: mb.finalize(false), name, animMode: 3, sss: 0.0, accent: nodeCol };
+      },
+    };
+
+    const CATEGORIES = Object.keys(GENERATORS);
+
+    // =========================================================================
+    // 4. WebGPU Setup: 4x MSAA + rgba16float HDR + Cook-Torrance PBR + Bloom
+    // =========================================================================
+    const canvas = document.getElementById("gpu-canvas");
+    const hudEl = document.getElementById("hud");
+    const modelNameEl = document.getElementById("model-name");
+    const archetypeBadgeEl = document.getElementById("archetype-badge");
+    const statSeedEl = document.getElementById("stat-seed");
+    const statTrisEl = document.getElementById("stat-tris");
+    const statTimeEl = document.getElementById("stat-time");
+    const statCountEl = document.getElementById("stat-count");
+    const progressFillEl = document.getElementById("progress-fill");
+    const countdownTextEl = document.getElementById("countdown-text");
+
+    function showError(msg) {
+      document.getElementById("error-message").textContent = msg;
+      document.getElementById("error-overlay").style.display = "flex";
+    }
+
+    if (!navigator.gpu) {
+      showError("このブラウザは WebGPU に対応していません。Chrome / Edge の最新版をお使いください。");
+      throw new Error("WebGPU unsupported");
+    }
+
+    const adapter = await navigator.gpu.requestAdapter();
+    if (!adapter) {
+      showError("WebGPU アダプターを取得できませんでした。");
+      throw new Error("No GPUAdapter");
+    }
+    const device = await adapter.requestDevice();
+    const context = canvas.getContext("webgpu");
+    const swapFormat = navigator.gpu.getPreferredCanvasFormat();
+    const HDR_FORMAT = "rgba16float";
+    const SAMPLE_COUNT = 4;
+
+    // 4a. Backdrop + Volumetric Light Shafts Shader
+    const BACKDROP_WGSL = /* wgsl */`
+      struct Uniforms {
+        viewProj : mat4x4f,
+        model    : mat4x4f,
+        camTime  : vec4f,
+        anim     : vec4f,
+        accent   : vec4f,
+      };
+      @group(0) @binding(0) var<uniform> u : Uniforms;
+
+      struct BGOut {
+        @builtin(position) pos : vec4f,
+        @location(0) uv : vec2f,
+      };
+
+      @vertex
+      fn vs_bg(@builtin(vertex_index) idx : u32) -> BGOut {
+        var pts = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));
+        var out : BGOut;
+        out.pos = vec4f(pts[idx], 0.9999, 1.0);
+        out.uv = pts[idx] * 0.5 + 0.5;
+        return out;
+      }
+
+      @fragment
+      fn fs_bg(in : BGOut) -> @location(0) vec4f {
+        let t = u.camTime.w;
+        let deep = vec3f(0.008, 0.014, 0.028);
+        let mid  = vec3f(0.02, 0.042, 0.085) + u.accent.rgb * 0.035;
+        var col = mix(deep, mid, pow(in.uv.y, 1.3));
+
+        // Subtle volumetric god-rays from top-right
+        let rayCoord = in.uv.x * 5.0 - in.uv.y * 1.8;
+        let rays = pow(max(0.0, sin(rayCoord * 2.5 + t * 0.35) * 0.5 + 0.5), 4.0)
+                 * smoothstep(0.1, 0.95, in.uv.y) * 0.075;
+        col += (vec3f(0.25, 0.55, 0.85) + u.accent.rgb * 0.5) * rays;
+        return vec4f(col, 1.0);
+      }
+    `;
+
+    // 4b. Main Cook-Torrance PBR + 3D Procedural Bump + SSS Shader
+    const SCENE_WGSL = /* wgsl */`
+      struct Uniforms {
+        viewProj : mat4x4f,
+        model    : mat4x4f,
+        camTime  : vec4f, // xyz = cameraPos, w = time
+        anim     : vec4f, // x = animMode, y = sssAmount, z = isFloor, w = unused
+        accent   : vec4f, // rgb = accentColor
+      };
+      @group(0) @binding(0) var<uniform> u : Uniforms;
+
+      struct VSIn {
+        @location(0) pos   : vec3f,
+        @location(1) norm  : vec3f,
+        @location(2) color : vec3f,
+        @location(3) attrs : vec4f, // x=emissive, y=animWeight, z=phase, w=metalness
+      };
+
+      struct VSOut {
+        @builtin(position) clipPos : vec4f,
+        @location(0) worldPos : vec3f,
+        @location(1) worldNorm: vec3f,
+        @location(2) color    : vec3f,
+        @location(3) attrs    : vec4f,
+        @location(4) localPos : vec3f,
+      };
+
+      @vertex
+      fn vs_main(v : VSIn) -> VSOut {
+        var p = v.pos;
+        let t = u.camTime.w;
+        let mode = u.anim.x;
+        let w = v.attrs.y;
+        let phase = v.attrs.z;
+
+        if (mode > 0.5 && mode < 1.5) {
+          let wave = sin(t * 2.4 + phase + p.y * 2.5) * 0.075 * w;
+          p.x += wave;
+          p.z += cos(t * 2.1 + phase + p.y * 2.2) * 0.075 * w;
+          p.y += sin(t * 2.0 + phase) * 0.035 * w;
+        } else if (mode >= 1.5 && mode < 2.5) {
+          let wingDist = abs(p.x);
+          p.y += sin(t * 3.0 - p.z * 1.4) * 0.22 * wingDist * w;
+        } else if (mode >= 2.5 && mode < 3.5) {
+          p.y += sin(t * 1.8 + phase) * 0.025 * (0.3 + w);
+        } else if (mode >= 3.5 && mode < 4.5) {
+          // Serpentine S-wave swimming
+          p.x += sin(t * 3.8 - p.z * 2.5) * 0.24 * w;
+          p.y += cos(t * 2.6 - p.z * 1.8) * 0.07 * w;
+        } else if (mode >= 4.5) {
+          // Graceful wingbeat + hover bob
+          let wingDist = abs(p.x);
+          p.y += sin(t * 6.5 - wingDist * 1.2) * 0.32 * wingDist * w + sin(t * 2.2) * 0.05;
+        }
+
+        let wp = (u.model * vec4f(p, 1.0)).xyz;
+        let wn = normalize((u.model * vec4f(v.norm, 0.0)).xyz);
+
+        var out : VSOut;
+        out.clipPos = u.viewProj * vec4f(wp, 1.0);
+        out.worldPos = wp;
+        out.worldNorm = wn;
+        out.color = v.color;
+        out.attrs = v.attrs;
+        out.localPos = v.pos;
+        return out;
+      }
+
+      // Fast 3D hash & value noise for procedural micro-detail
+      fn hash3(p : vec3f) -> f32 {
+        var q = fract(p * 0.3183099 + vec3f(0.1, 0.2, 0.3));
+        q *= 17.0;
+        return fract(q.x * q.y * q.z * (q.x + q.y + q.z));
+      }
+
+      fn noise3(x : vec3f) -> f32 {
+        let i = floor(x);
+        let f = fract(x);
+        let u2 = f * f * (3.0 - 2.0 * f);
+        return mix(
+          mix(mix(hash3(i + vec3f(0,0,0)), hash3(i + vec3f(1,0,0)), u2.x),
+              mix(hash3(i + vec3f(0,1,0)), hash3(i + vec3f(1,1,0)), u2.x), u2.y),
+          mix(mix(hash3(i + vec3f(0,0,1)), hash3(i + vec3f(1,0,1)), u2.x),
+              mix(hash3(i + vec3f(0,1,1)), hash3(i + vec3f(1,1,1)), u2.x), u2.y),
+          u2.z
+        );
+      }
+
+      fn fbm(p : vec3f) -> f32 {
+        return 0.55 * noise3(p) + 0.30 * noise3(p * 2.13) + 0.15 * noise3(p * 4.41);
+      }
+
+      // Cook-Torrance GGX PBR helpers
+      fn distGGX(N : vec3f, H : vec3f, rough : f32) -> f32 {
+        let a = rough * rough;
+        let a2 = a * a;
+        let NdotH = max(dot(N, H), 0.0);
+        let denom = (NdotH * NdotH * (a2 - 1.0) + 1.0);
+        return a2 / max(3.14159265 * denom * denom, 0.0001);
+      }
+
+      fn geomSchlick(NdotV : f32, rough : f32) -> f32 {
+        let r = rough + 1.0;
+        let k = (r * r) / 8.0;
+        return NdotV / (NdotV * (1.0 - k) + k);
+      }
+
+      fn geomSmith(N : vec3f, V : vec3f, L : vec3f, rough : f32) -> f32 {
+        return geomSchlick(max(dot(N, V), 0.0), rough) * geomSchlick(max(dot(N, L), 0.0), rough);
+      }
+
+      fn fresnelSchlick(cosTheta : f32, F0 : vec3f) -> vec3f {
+        return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+      }
+
+      fn evalLight(L : vec3f, lightCol : vec3f, N : vec3f, V : vec3f, albedo : vec3f, metal : f32, rough : f32, F0 : vec3f) -> vec3f {
+        let H = normalize(V + L);
+        let NDF = distGGX(N, H, rough);
+        let G = geomSmith(N, V, L, rough);
+        let F = fresnelSchlick(max(dot(H, V), 0.0), F0);
+        let NdotL = max(dot(N, L), 0.0);
+        let NdotV = max(dot(N, V), 0.001);
+        let spec = (NDF * G * F) / max(4.0 * NdotV * NdotL, 0.001);
+        let kD = (vec3f(1.0) - F) * (1.0 - metal);
+        return (kD * albedo / 3.14159265 + spec) * lightCol * NdotL;
+      }
+
+      @fragment
+      fn fs_main(in : VSOut) -> @location(0) vec4f {
+        // Studio floor shading with radial contact shadow & subtle rings
+        if (u.anim.z > 0.5) {
+          let r = length(in.worldPos.xz);
+          let fade = smoothstep(5.2, 0.6, r);
+          let contactAO = smoothstep(0.35, 1.75, r);
+          let ring = smoothstep(0.02, 0.0, abs(r - 1.68)) * 0.85
+                   + smoothstep(0.012, 0.0, abs(r - 2.35)) * 0.25;
+          let floorCol = vec3f(0.015, 0.025, 0.045) * (0.35 + 0.65 * contactAO)
+                       + u.accent.rgb * ring * 1.4;
+          return vec4f(floorCol * fade, 1.0);
+        }
+
+        // Procedural micro-bump & surface variation from localPos
+        let nFreq = 7.5;
+        let eps = 0.02;
+        let f0 = fbm(in.localPos * nFreq);
+        let fx = fbm((in.localPos + vec3f(eps, 0.0, 0.0)) * nFreq);
+        let fy = fbm((in.localPos + vec3f(0.0, eps, 0.0)) * nFreq);
+        let fz = fbm((in.localPos + vec3f(0.0, 0.0, eps)) * nFreq);
+        let grad = vec3f(fx - f0, fy - f0, fz - f0) / eps;
+
+        let bumpStrength = mix(0.08, 0.025, in.attrs.w);
+        let N = normalize(in.worldNorm - grad * bumpStrength);
+        let V = normalize(u.camTime.xyz - in.worldPos);
+
+        let albedo = in.color * (0.86 + 0.28 * f0);
+        let metal = clamp(in.attrs.w, 0.0, 1.0);
+        let rough = clamp(mix(0.52, 0.16, metal) + (f0 - 0.5) * 0.18, 0.08, 0.92);
+        let F0 = mix(vec3f(0.04), albedo, metal);
+
+        // Key light + Cool fill + Accent rim light
+        let L1 = normalize(vec3f(0.6, 0.88, 0.55));
+        let L2 = normalize(vec3f(-0.75, 0.25, -0.6));
+        let L3 = normalize(vec3f(0.0, -0.8, 0.35));
+
+        var Lo = vec3f(0.0);
+        Lo += evalLight(L1, vec3f(2.6, 2.45, 2.3), N, V, albedo, metal, rough, F0);
+        Lo += evalLight(L2, u.accent.rgb * 1.35 + vec3f(0.25, 0.4, 0.7), N, V, albedo, metal, rough, F0);
+        Lo += evalLight(L3, vec3f(0.2, 0.35, 0.55), N, V, albedo, metal, rough, F0);
+
+        // Subsurface Scattering (SSS) wrap for organic models
+        let sssWrap = max(0.0, (dot(-N, L1) + 0.55) / 1.55);
+        let sss = albedo * u.anim.y * pow(sssWrap, 2.0) * 0.65;
+
+        // Ambient IBL-like hemisphere + Fresnel rim
+        let hemi = mix(vec3f(0.025, 0.035, 0.06), vec3f(0.09, 0.14, 0.22), N.y * 0.5 + 0.5);
+        let rim = pow(1.0 - max(dot(N, V), 0.0), 3.5) * (u.accent.rgb * 0.55 + vec3f(0.15));
+
+        let emissive = in.color * in.attrs.x * (0.9 + 0.2 * sin(u.camTime.w * 2.8 + in.attrs.z));
+        var col = hemi * albedo + Lo + sss + rim + emissive;
+
+        let dist = length(u.camTime.xyz - in.worldPos);
+        let fog = clamp((dist - 9.0) / 18.0, 0.0, 1.0);
+        col = mix(col, vec3f(0.012, 0.022, 0.045), fog);
+        return vec4f(col, 1.0);
+      }
+    `;
+
+    // 4c. HDR Post-Processing Bloom + ACES Tone Mapping + Vignette
+    const POST_WGSL = /* wgsl */`
+      @group(0) @binding(0) var hdrTex : texture_2d<f32>;
+      @group(0) @binding(1) var hdrSamp : sampler;
+
+      struct POut {
+        @builtin(position) pos : vec4f,
+        @location(0) uv : vec2f,
+      };
+
+      @vertex
+      fn vs_post(@builtin(vertex_index) idx : u32) -> POut {
+        var pts = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));
+        var out : POut;
+        out.pos = vec4f(pts[idx], 0.0, 1.0);
+        out.uv = vec2f(pts[idx].x * 0.5 + 0.5, 0.5 - pts[idx].y * 0.5);
+        return out;
+      }
+
+      fn aces(x : vec3f) -> vec3f {
+        let a = 2.51;
+        let b = 0.03;
+        let c = 2.43;
+        let d = 0.59;
+        let e = 0.14;
+        return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3f(0.0), vec3f(1.0));
+      }
+
+      @fragment
+      fn fs_post(in : POut) -> @location(0) vec4f {
+        let base = textureSample(hdrTex, hdrSamp, in.uv).rgb;
+        let texSize = vec2f(textureDimensions(hdrTex));
+        let px = 1.0 / texSize;
+
+        // Multi-ring soft HDR bloom
+        var bloom = vec3f(0.0);
+        let dirs = array<vec2f, 8>(
+          vec2f(1.0, 0.0), vec2f(-1.0, 0.0), vec2f(0.0, 1.0), vec2f(0.0, -1.0),
+          vec2f(0.707, 0.707), vec2f(-0.707, 0.707), vec2f(0.707, -0.707), vec2f(-0.707, -0.707)
+        );
+        for (var r = 1; r <= 3; r++) {
+          let rad = f32(r) * 4.5;
+          for (var i = 0; i < 8; i++) {
+            let s = textureSample(hdrTex, hdrSamp, in.uv + dirs[i] * rad * px).rgb;
+            let lum = dot(s, vec3f(0.2126, 0.7152, 0.0722));
+            bloom += s * max(lum - 0.85, 0.0);
+          }
+        }
+        bloom /= 24.0;
+
+        var col = base + bloom * 0.55;
+
+        // Subtle cinematic vignette
+        let d = distance(in.uv, vec2f(0.5));
+        col *= 1.0 - smoothstep(0.45, 0.95, d) * 0.35;
+
+        col = aces(col);
+        col = pow(col, vec3f(1.0 / 2.2));
+        return vec4f(col, 1.0);
+      }
+    `;
+
+    const bgModule = device.createShaderModule({ code: BACKDROP_WGSL });
+    const sceneModule = device.createShaderModule({ code: SCENE_WGSL });
+    const postModule = device.createShaderModule({ code: POST_WGSL });
+
+    const bgPipeline = device.createRenderPipeline({
+      layout: "auto",
+      vertex: { module: bgModule, entryPoint: "vs_bg" },
+      fragment: { module: bgModule, entryPoint: "fs_bg", targets: [{ format: HDR_FORMAT }] },
+      primitive: { topology: "triangle-list" },
+      multisample: { count: SAMPLE_COUNT },
+      depthStencil: { format: "depth24plus", depthWriteEnabled: false, depthCompare: "always" },
+    });
+
+    const scenePipeline = device.createRenderPipeline({
+      layout: "auto",
+      vertex: {
+        module: sceneModule,
+        entryPoint: "vs_main",
+        buffers: [{
+          arrayStride: FLOATS_PER_VERT * 4,
+          attributes: [
+            { shaderLocation: 0, offset: 0, format: "float32x3" },
+            { shaderLocation: 1, offset: 12, format: "float32x3" },
+            { shaderLocation: 2, offset: 24, format: "float32x3" },
+            { shaderLocation: 3, offset: 36, format: "float32x4" },
+          ],
+        }],
+      },
+      fragment: { module: sceneModule, entryPoint: "fs_main", targets: [{ format: HDR_FORMAT }] },
+      primitive: { topology: "triangle-list", cullMode: "none" },
+      multisample: { count: SAMPLE_COUNT },
+      depthStencil: { format: "depth24plus", depthWriteEnabled: true, depthCompare: "less" },
+    });
+
+    const postPipeline = device.createRenderPipeline({
+      layout: "auto",
+      vertex: { module: postModule, entryPoint: "vs_post" },
+      fragment: { module: postModule, entryPoint: "fs_post", targets: [{ format: swapFormat }] },
+      primitive: { topology: "triangle-list" },
+    });
+
+    const uniformBuffer = device.createBuffer({
+      size: 176,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    const floorUniformBuffer = device.createBuffer({
+      size: 176,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
+    const bgBindGroup = device.createBindGroup({
+      layout: bgPipeline.getBindGroupLayout(0),
+      entries: [{ binding: 0, resource: { buffer: uniformBuffer } }],
+    });
+    const modelBindGroup = device.createBindGroup({
+      layout: scenePipeline.getBindGroupLayout(0),
+      entries: [{ binding: 0, resource: { buffer: uniformBuffer } }],
+    });
+    const floorBindGroup = device.createBindGroup({
+      layout: scenePipeline.getBindGroupLayout(0),
+      entries: [{ binding: 0, resource: { buffer: floorUniformBuffer } }],
+    });
+
+    const linearSampler = device.createSampler({ magFilter: "linear", minFilter: "linear" });
+
+    // Studio floor disc
+    function buildFloorDisc() {
+      const mb = new MeshBuilder();
+      const segs = 64, r = 5.4, y = -1.62;
+      for (let i = 0; i < segs; i++) {
+        const a0 = (i / segs) * Math.PI * 2;
+        const a1 = ((i + 1) / segs) * Math.PI * 2;
+        mb.addTri(
+          [0, y, 0],
+          [Math.cos(a1) * r, y, Math.sin(a1) * r],
+          [Math.cos(a0) * r, y, Math.sin(a0) * r],
+          [1, 1, 1], [1, 1, 1], [1, 1, 1],
+          [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]
+        );
+      }
+      return { data: new Float32Array(mb.verts), vertCount: mb.verts.length / FLOATS_PER_VERT };
+    }
+
+    const floorMesh = buildFloorDisc();
+    const floorBuffer = device.createBuffer({
+      size: floorMesh.data.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+    });
+    device.queue.writeBuffer(floorBuffer, 0, floorMesh.data);
+
+    // =========================================================================
+    // 5. Render Targets, Camera & Infinite Forge Loop
+    // =========================================================================
+    let depthTexture = null;
+    let hdrMsaaTex = null;
+    let hdrResolveTex = null;
+    let postBindGroup = null;
+
+    function ensureSize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = Math.max(1, Math.floor(canvas.clientWidth * dpr));
+      const h = Math.max(1, Math.floor(canvas.clientHeight * dpr));
+      if (canvas.width !== w || canvas.height !== h || !depthTexture) {
+        canvas.width = w;
+        canvas.height = h;
+        context.configure({ device, format: swapFormat, alphaMode: "opaque" });
+
+        if (depthTexture) depthTexture.destroy();
+        if (hdrMsaaTex) hdrMsaaTex.destroy();
+        if (hdrResolveTex) hdrResolveTex.destroy();
+
+        depthTexture = device.createTexture({
+          size: [w, h],
+          format: "depth24plus",
+          sampleCount: SAMPLE_COUNT,
+          usage: GPUTextureUsage.RENDER_ATTACHMENT,
+        });
+        hdrMsaaTex = device.createTexture({
+          size: [w, h],
+          format: HDR_FORMAT,
+          sampleCount: SAMPLE_COUNT,
+          usage: GPUTextureUsage.RENDER_ATTACHMENT,
+        });
+        hdrResolveTex = device.createTexture({
+          size: [w, h],
+          format: HDR_FORMAT,
+          sampleCount: 1,
+          usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+        });
+        postBindGroup = device.createBindGroup({
+          layout: postPipeline.getBindGroupLayout(0),
+          entries: [
+            { binding: 0, resource: hdrResolveTex.createView() },
+            { binding: 1, resource: linearSampler },
+          ],
+        });
+      }
+    }
+    window.addEventListener("resize", ensureSize);
+    ensureSize();
+
+    let currentCategory = "random";
+    let autoCycle = true;
+    let autoSpin = true;
+    const CYCLE_SECONDS = 6.0;
+    let cycleElapsed = 0;
+    let forgedCount = 0;
+
+    let activeModel = null;
+    let activeBuffer = null;
+    let transitionT = 0;
+
+    function forgeNextModel() {
+      const t0 = performance.now();
+      const seed = (Math.random() * 0xFFFFFFFF) >>> 0;
+      const rng = mulberry32(seed);
+      const cat = currentCategory === "random"
+        ? CATEGORIES[Math.floor(rng() * CATEGORIES.length)]
+        : currentCategory;
+
+      const result = GENERATORS[cat](rng);
+      const genMs = (performance.now() - t0).toFixed(1);
+
+      if (activeBuffer) activeBuffer.destroy();
+      activeBuffer = device.createBuffer({
+        size: Math.max(result.mesh.data.byteLength, 64),
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+      });
+      device.queue.writeBuffer(activeBuffer, 0, result.mesh.data);
+
+      activeModel = result;
+      transitionT = 0;
+      cycleElapsed = 0;
+      forgedCount++;
+
+      modelNameEl.textContent = result.name;
+      archetypeBadgeEl.textContent = `[${cat.toUpperCase()}]`;
+      statSeedEl.textContent = `Seed: #${seed.toString(16).toUpperCase().padStart(8, "0")}`;
+      statTrisEl.textContent = `Tris: ${result.mesh.triCount.toLocaleString()}`;
+      statTimeEl.textContent = `Gen: ${genMs} ms`;
+      statCountEl.textContent = `Forged: ${forgedCount}`;
+    }
+
+    let camYaw = 0.65;
+    let camPitch = 0.25;
+    let camDist = 5.1;
+    let dragging = false;
+    let lastX = 0, lastY = 0;
+
+    canvas.addEventListener("pointerdown", (e) => {
+      dragging = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
+    });
+    window.addEventListener("pointerup", () => { dragging = false; });
+    window.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+      camYaw -= (e.clientX - lastX) * 0.008;
+      camPitch = Math.max(-1.15, Math.min(1.15, camPitch + (e.clientY - lastY) * 0.008));
+      lastX = e.clientX;
+      lastY = e.clientY;
+    });
+    canvas.addEventListener("wheel", (e) => {
+      camDist = Math.max(2.4, Math.min(11.0, camDist + e.deltaY * 0.004));
+    }, { passive: true });
+
+    document.getElementById("btn-next").addEventListener("click", forgeNextModel);
+    document.getElementById("btn-toggle-auto").addEventListener("click", (e) => {
+      autoCycle = !autoCycle;
+      e.target.textContent = autoCycle ? "⏸ Auto: ON" : "▶ Auto: OFF";
+    });
+    document.getElementById("btn-wire-spin").addEventListener("click", (e) => {
+      autoSpin = !autoSpin;
+      e.target.textContent = autoSpin ? "🌀 Spin: ON" : "🌀 Spin: OFF";
+    });
+    document.querySelectorAll("#category-pills .pill").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#category-pills .pill").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentCategory = btn.dataset.cat;
+        forgeNextModel();
+      });
+    });
+    window.addEventListener("keydown", (e) => {
+      if (e.code === "Space") {
+        e.preventDefault();
+        forgeNextModel();
+      } else if (e.key === "h" || e.key === "H") {
+        hudEl.classList.toggle("hidden");
+      }
+    });
+
+    forgeNextModel();
+
+    let lastFrame = performance.now();
+    let spinAngle = 0;
+
+    function frame(now) {
+      const dt = Math.min((now - lastFrame) * 0.001, 0.1);
+      lastFrame = now;
+      const t = now * 0.001;
+
+      if (autoCycle) {
+        cycleElapsed += dt;
+        if (cycleElapsed >= CYCLE_SECONDS) forgeNextModel();
+      }
+      const pct = Math.min(100, (cycleElapsed / CYCLE_SECONDS) * 100);
+      progressFillEl.style.width = `${pct}%`;
+      countdownTextEl.textContent = autoCycle ? `${Math.max(0, CYCLE_SECONDS - cycleElapsed).toFixed(1)}s` : "Paused";
+
+      transitionT = Math.min(1, transitionT + dt * 3.0);
+      const easeOut = 1 - Math.pow(1 - transitionT, 3);
+      if (autoSpin && !dragging) spinAngle += dt * 0.38;
+
+      ensureSize();
+      const aspect = canvas.width / canvas.height;
+      const eye = [
+        Math.cos(camPitch) * Math.sin(camYaw) * camDist,
+        Math.sin(camPitch) * camDist,
+        Math.cos(camPitch) * Math.cos(camYaw) * camDist,
+      ];
+      const view = mat4LookAt(eye, [0, 0, 0], [0, 1, 0]);
+      const proj = mat4Perspective(Math.PI / 4, aspect, 0.1, 60.0);
+      const viewProj = mat4Mul(proj, view);
+
+      const accent = activeModel ? activeModel.accent : [0.3, 0.9, 0.95];
+
+      // Update model uniforms
+      const modelMat = mat4RotateYScale(spinAngle, easeOut);
+      const uData = new Float32Array(44);
+      uData.set(viewProj, 0);
+      uData.set(modelMat, 16);
+      uData.set([eye[0], eye[1], eye[2], t], 32);
+      uData.set([activeModel ? activeModel.animMode : 0, activeModel ? activeModel.sss : 0, 0, 0], 36);
+      uData.set([accent[0], accent[1], accent[2], 1], 40);
+      device.queue.writeBuffer(uniformBuffer, 0, uData);
+
+      // Update floor uniforms
+      const floorMat = mat4RotateYScale(0, 1.0);
+      const fData = new Float32Array(44);
+      fData.set(viewProj, 0);
+      fData.set(floorMat, 16);
+      fData.set([eye[0], eye[1], eye[2], t], 32);
+      fData.set([0, 0, 1, 0], 36);
+      fData.set([accent[0], accent[1], accent[2], 1], 40);
+      device.queue.writeBuffer(floorUniformBuffer, 0, fData);
+
+      const encoder = device.createCommandEncoder();
+
+      // Pass 1: HDR 4x MSAA Scene -> Resolve to hdrResolveTex
+      const scenePass = encoder.beginRenderPass({
+        colorAttachments: [{
+          view: hdrMsaaTex.createView(),
+          resolveTarget: hdrResolveTex.createView(),
+          clearValue: { r: 0.01, g: 0.015, b: 0.03, a: 1.0 },
+          loadOp: "clear",
+          storeOp: "discard",
+        }],
+        depthStencilAttachment: {
+          view: depthTexture.createView(),
+          depthClearValue: 1.0,
+          depthLoadOp: "clear",
+          depthStoreOp: "discard",
+        },
+      });
+
+      scenePass.setPipeline(bgPipeline);
+      scenePass.setBindGroup(0, bgBindGroup);
+      scenePass.draw(3);
+
+      scenePass.setPipeline(scenePipeline);
+      if (activeModel && activeBuffer) {
+        scenePass.setBindGroup(0, modelBindGroup);
+        scenePass.setVertexBuffer(0, activeBuffer);
+        scenePass.draw(activeModel.mesh.vertCount);
+      }
+
+      scenePass.setBindGroup(0, floorBindGroup);
+      scenePass.setVertexBuffer(0, floorBuffer);
+      scenePass.draw(floorMesh.vertCount);
+      scenePass.end();
+
+      // Pass 2: Bloom + ACES Tone Mapping -> Swapchain
+      const postPass = encoder.beginRenderPass({
+        colorAttachments: [{
+          view: context.getCurrentTexture().createView(),
+          clearValue: { r: 0, g: 0, b: 0, a: 1 },
+          loadOp: "clear",
+          storeOp: "store",
+        }],
+      });
+      postPass.setPipeline(postPipeline);
+      postPass.setBindGroup(0, postBindGroup);
+      postPass.draw(3);
+      postPass.end();
+
+      device.queue.submit([encoder.finish()]);
+      requestAnimationFrame(frame);
+    }
+
+    requestAnimationFrame(frame);
+  </script>
+</body>
+</html>
