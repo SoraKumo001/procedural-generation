@@ -1872,13 +1872,14 @@
     window.addEventListener("resize", ensureSize);
     ensureSize();
 
-    function mat4TransformY(tx, ty, tz, angle, scale) {
-      const c = Math.cos(angle) * scale;
-      const s = Math.sin(angle) * scale;
+    function mat4Transform3D(tx, ty, tz, yaw, pitch, scale) {
+      const cy = Math.cos(yaw), sy = Math.sin(yaw);
+      const cp = Math.cos(pitch), sp = Math.sin(pitch);
+      // R_y(yaw) * R_x(pitch) * scale
       return new Float32Array([
-        c, 0, -s, 0,
-        0, scale, 0, 0,
-        s, 0, c, 0,
+        cy * scale, 0, -sy * scale, 0,
+        sy * sp * scale, cp * scale, cy * sp * scale, 0,
+        sy * cp * scale, -sp * scale, cy * cp * scale, 0,
         tx, ty, tz, 1,
       ]);
     }
@@ -1889,6 +1890,7 @@
     let autoSpin = true;
     const MAX_SWARM_MODELS = 32;
     const GROUNDED_CATS = new Set(["flora", "crystal", "architecture"]);
+    const DIRECTIONAL_CATS = new Set(["leviathan", "serpent", "spaceship", "butterfly"]);
     let cycleElapsed = 0;
     let forgedCount = 0;
 
@@ -1967,24 +1969,38 @@
         const radius = isFirst ? 0 : Math.min(8.6, 1.75 + Math.sqrt(entities.length) * 1.45);
         const scale = isFirst ? 0.85 : 0.42 + rng() * 0.38;
         const grounded = GROUNDED_CATS.has(cat);
+        const directional = DIRECTIONAL_CATS.has(cat);
         const yPos = grounded
           ? -1.62 + 1.05 * scale
-          : (isFirst ? 0.2 : -0.25 + rng() * 3.6);
+          : (isFirst ? 0.5 : -0.4 + rng() * 4.2);
+
+        const swimSpeed = grounded ? 0 : (directional ? 1.15 + rng() * 0.95 : 0.45 + rng() * 0.45);
+        const heading = rng() * Math.PI * 2;
+        const elev = (rng() - 0.5) * 0.5;
 
         entities.push({
           result,
+          cat,
           vertexBuffer,
           uniformBuffer: uBuf,
           bindGroup: bGroup,
           pos: [Math.cos(angle) * radius, yPos, Math.sin(angle) * radius],
+          vel: grounded ? [0, 0, 0] : [
+            Math.cos(elev) * Math.sin(heading) * swimSpeed,
+            Math.sin(elev) * swimSpeed * 0.5,
+            Math.cos(elev) * Math.cos(heading) * swimSpeed,
+          ],
+          swimSpeed,
+          yaw: heading,
+          pitch: 0,
           baseRot: rng() * Math.PI * 2,
-          rotSpeed: grounded ? 0.08 : (rng() - 0.5) * 0.55,
+          rotSpeed: grounded ? 0.08 : (rng() - 0.5) * 0.5,
           targetScale: scale,
           transitionT: 0,
-          driftAmp: grounded ? 0 : 0.14 + rng() * 0.24,
-          driftSpeed: 0.4 + rng() * 0.6,
           phase: rng() * Math.PI * 2,
+          wanderFreq: 0.35 + rng() * 0.45,
           grounded,
+          directional,
         });
       }
 
@@ -2144,21 +2160,97 @@
       scenePass.draw(3);
 
       scenePass.setPipeline(scenePipeline);
+
+      // Update 3D aquarium swimming physics in Swarm mode
+      if (viewMode === "swarm") {
+        const TANK_R = 8.4;
+        const Y_MIN = -0.75;
+        const Y_MAX = 4.2;
+        for (let i = 0; i < entities.length; i++) {
+          const ent = entities[i];
+          if (ent.grounded) continue;
+
+          // 1. Organic 3D wander force
+          const wf = ent.wanderFreq;
+          const ph = ent.phase;
+          let ax = Math.sin(t * wf + ph) * 0.85 + Math.cos(t * wf * 0.61 + ph * 1.7) * 0.45;
+          let ay = Math.sin(t * wf * 0.83 + ph * 2.3) * 0.42;
+          let az = Math.cos(t * wf * 0.91 + ph * 1.1) * 0.85 + Math.sin(t * wf * 0.53 + ph * 2.9) * 0.45;
+
+          // 2. Soft aquarium tank boundary steering
+          const rx = ent.pos[0], rz = ent.pos[2];
+          const rDist = Math.hypot(rx, rz);
+          if (rDist > TANK_R * 0.72) {
+            const pull = ((rDist - TANK_R * 0.72) / (TANK_R * 0.28)) * 2.8;
+            ax -= (rx / (rDist || 1)) * pull;
+            az -= (rz / (rDist || 1)) * pull;
+          }
+          if (ent.pos[1] < Y_MIN + 0.6) ay += (Y_MIN + 0.6 - ent.pos[1]) * 3.2;
+          if (ent.pos[1] > Y_MAX - 0.6) ay -= (ent.pos[1] - (Y_MAX - 0.6)) * 3.2;
+
+          // 3. Soft separation between swimmers
+          for (let j = 0; j < entities.length; j++) {
+            if (i === j) continue;
+            const o = entities[j];
+            const dx = ent.pos[0] - o.pos[0];
+            const dy = ent.pos[1] - o.pos[1];
+            const dz = ent.pos[2] - o.pos[2];
+            const d2 = dx * dx + dy * dy + dz * dz;
+            if (d2 > 0.001 && d2 < 2.25) {
+              const d = Math.sqrt(d2);
+              const push = (1.5 - d) * 1.6;
+              ax += (dx / d) * push;
+              ay += (dy / d) * push;
+              az += (dz / d) * push;
+            }
+          }
+
+          ent.vel[0] += ax * dt;
+          ent.vel[1] += ay * dt;
+          ent.vel[2] += az * dt;
+
+          // Normalize smoothly toward target swimSpeed
+          const spd = Math.hypot(ent.vel[0], ent.vel[1], ent.vel[2]) || 0.001;
+          const targetSpd = ent.swimSpeed;
+          const blend = targetSpd / spd;
+          ent.vel[0] = ent.vel[0] * (1 - 2.0 * dt) + ent.vel[0] * blend * (2.0 * dt);
+          ent.vel[1] = ent.vel[1] * (1 - 2.0 * dt) + ent.vel[1] * blend * (2.0 * dt);
+          ent.vel[2] = ent.vel[2] * (1 - 2.0 * dt) + ent.vel[2] * blend * (2.0 * dt);
+
+          ent.pos[0] += ent.vel[0] * dt;
+          ent.pos[1] += ent.vel[1] * dt;
+          ent.pos[2] += ent.vel[2] * dt;
+
+          // Smoothly orient toward swimming direction
+          if (ent.directional) {
+            const targetYaw = Math.atan2(ent.vel[0], ent.vel[2]);
+            let diff = targetYaw - ent.yaw;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            ent.yaw += diff * Math.min(1, dt * 4.0);
+            const horiz = Math.hypot(ent.vel[0], ent.vel[2]) || 0.001;
+            const targetPitch = -Math.atan2(ent.vel[1], horiz) * 0.75;
+            ent.pitch += (targetPitch - ent.pitch) * Math.min(1, dt * 4.0);
+          } else {
+            ent.yaw = ent.baseRot + t * ent.rotSpeed;
+            ent.pitch = Math.sin(t * 1.1 + ent.phase) * 0.14;
+          }
+        }
+      }
+
       for (const ent of entities) {
         ent.transitionT = Math.min(1, ent.transitionT + dt * 2.6);
         const easeOut = 1 - Math.pow(1 - ent.transitionT, 3);
         const s = ent.targetScale * easeOut;
 
-        const rot = viewMode === "single"
-          ? camAutoYaw
-          : ent.baseRot + t * ent.rotSpeed;
-        const driftY = Math.sin(t * ent.driftSpeed + ent.phase) * ent.driftAmp;
-        const driftX = Math.cos(t * ent.driftSpeed * 0.7 + ent.phase) * ent.driftAmp * 0.5;
-        const modelMat = mat4TransformY(
-          ent.pos[0] + driftX,
-          ent.pos[1] + driftY,
+        const yaw = viewMode === "single" ? camAutoYaw : ent.yaw;
+        const pitch = viewMode === "single" ? 0 : ent.pitch;
+        const modelMat = mat4Transform3D(
+          ent.pos[0],
+          ent.pos[1],
           ent.pos[2],
-          rot,
+          yaw,
+          pitch,
           s
         );
 
