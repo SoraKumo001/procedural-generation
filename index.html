@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Procedural Genesis — WebGPU PBR &amp; Bloom Showcase</title>
+  <title>Procedural Aquarium — WebGPU Real-Time Aquatic Ecosystem</title>
   <style>
     :root {
-      --bg: #03060c;
-      --panel: rgba(8, 13, 24, 0.72);
-      --border: rgba(130, 205, 255, 0.18);
-      --text: #e8f2ff;
-      --muted: #8298b6;
-      --accent: #4deeea;
-      --accent2: #a855f7;
+      --bg: #040b12;
+      --panel: rgba(6, 18, 28, 0.72);
+      --border: rgba(96, 215, 224, 0.22);
+      --text: #e6f6fb;
+      --muted: #84adc0;
+      --accent: #38d9c0;
+      --accent2: #38bdf8;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
@@ -57,11 +57,11 @@
       border-radius: 14px;
       padding: 14px 18px;
       max-width: 440px;
-      box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
     }
     .brand-eyebrow {
       font-size: 10px;
-      letter-spacing: 0.18em;
+      letter-spacing: 0.16em;
       text-transform: uppercase;
       color: var(--accent);
       margin-bottom: 4px;
@@ -95,8 +95,8 @@
       gap: 8px;
     }
     .stat-chip {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.09);
       padding: 2px 8px;
       border-radius: 999px;
       font-variant-numeric: tabular-nums;
@@ -105,10 +105,10 @@
     .controls-top {
       pointer-events: auto;
       display: flex;
-      gap: 8px;
+      gap: 7px;
       flex-wrap: wrap;
       justify-content: flex-end;
-      max-width: 580px;
+      max-width: 600px;
     }
     .pill {
       background: var(--panel);
@@ -124,14 +124,14 @@
     }
     .pill:hover {
       color: var(--text);
-      border-color: rgba(120, 200, 255, 0.45);
+      border-color: rgba(96, 215, 224, 0.55);
     }
     .pill.active {
-      color: #041019;
+      color: #031518;
       background: var(--accent);
       border-color: var(--accent);
       font-weight: 600;
-      box-shadow: 0 0 16px rgba(77, 238, 234, 0.35);
+      box-shadow: 0 0 16px rgba(56, 217, 192, 0.35);
     }
 
     .bottom-bar {
@@ -151,11 +151,11 @@
       align-items: center;
       gap: 10px;
       flex-wrap: wrap;
-      box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
     }
     .btn {
-      background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.14);
       color: var(--text);
       padding: 8px 14px;
       border-radius: 10px;
@@ -168,17 +168,17 @@
       transition: all 0.16s ease;
     }
     .btn:hover {
-      background: rgba(255,255,255,0.14);
+      background: rgba(255, 255, 255, 0.14);
       transform: translateY(-1px);
     }
     .btn-primary {
-      background: linear-gradient(135deg, var(--accent), #38bdf8);
-      color: #03111a;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #03151a;
       border: none;
-      box-shadow: 0 4px 18px rgba(77, 238, 234, 0.28);
+      box-shadow: 0 4px 18px rgba(56, 217, 192, 0.28);
     }
     .btn-primary:hover {
-      background: linear-gradient(135deg, #6ef4f0, #60cdff);
+      background: linear-gradient(135deg, #5ef0d9, #60cdff);
     }
 
     .progress-wrap {
@@ -197,7 +197,7 @@
     .progress-track {
       height: 4px;
       border-radius: 999px;
-      background: rgba(255,255,255,0.1);
+      background: rgba(255, 255, 255, 0.1);
       overflow: hidden;
     }
     .progress-fill {
@@ -218,8 +218,8 @@
       color: var(--muted);
     }
     kbd {
-      background: rgba(255,255,255,0.1);
-      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.18);
       border-radius: 4px;
       padding: 1px 5px;
       color: var(--text);
@@ -233,14 +233,14 @@
       display: none;
       align-items: center;
       justify-content: center;
-      background: rgba(4, 7, 13, 0.94);
+      background: rgba(4, 11, 18, 0.94);
       padding: 24px;
       text-align: center;
       z-index: 99;
     }
     .error-card {
       max-width: 480px;
-      background: #0d1525;
+      background: #091824;
       border: 1px solid rgba(255, 100, 100, 0.35);
       border-radius: 16px;
       padding: 28px;
@@ -257,48 +257,44 @@
       <div class="brand">
         <div class="brand-eyebrow">
           <span class="pulse-dot"></span>
-          <span>WEBGPU PBR · 4x MSAA · HDR BLOOM</span>
-          <span id="archetype-badge" style="color:#c084fc;font-weight:700;"></span>
+          <span>WEBGPU AQUARIUM · PBR · CAUSTICS · 4x MSAA</span>
+          <span id="archetype-badge" style="color:#38bdf8;font-weight:700;"></span>
         </div>
-        <div class="model-title" id="model-name">Initializing WebGPU...</div>
+        <div class="model-title" id="model-name">Initializing Aquarium...</div>
         <div class="model-sub">
           <span class="stat-chip" id="stat-seed">Seed: —</span>
           <span class="stat-chip" id="stat-tris">Tris: —</span>
           <span class="stat-chip" id="stat-time">Gen: —</span>
-          <span class="stat-chip" id="stat-count">Forged: 0</span>
+          <span class="stat-chip" id="stat-count">In Tank: 0</span>
         </div>
       </div>
 
       <div class="controls-top" id="category-pills">
         <button class="pill active" data-cat="random">All Random</button>
-        <button class="pill" data-cat="jellyfish">Abyssal Jelly</button>
-        <button class="pill" data-cat="leviathan">Leviathan</button>
-        <button class="pill" data-cat="flora">Coral / Flora</button>
-        <button class="pill" data-cat="crystal">Crystals</button>
-        <button class="pill" data-cat="spaceship">Starship</button>
-        <button class="pill" data-cat="relic">Toroid Relic</button>
-        <button class="pill" data-cat="architecture">Citadel</button>
-        <button class="pill" data-cat="serpent">Sea Serpent</button>
-        <button class="pill" data-cat="butterfly">Luminous Moth</button>
-        <button class="pill" data-cat="squid">Abyssal Squid</button>
-        <button class="pill" data-cat="shell">Nautilus</button>
-        <button class="pill" data-cat="station">Orbital Ring</button>
-        <button class="pill" data-cat="island">Sky Island</button>
-        <button class="pill" data-cat="fractal">Fractal</button>
+        <button class="pill" data-cat="tropical_fish">Tropical Fish</button>
+        <button class="pill" data-cat="koi">Koi / Goldfish</button>
+        <button class="pill" data-cat="turtle">Sea Turtle</button>
+        <button class="pill" data-cat="manta">Manta Ray</button>
+        <button class="pill" data-cat="jellyfish">Jellyfish</button>
+        <button class="pill" data-cat="seahorse">Seahorse</button>
+        <button class="pill" data-cat="squid">Reef Squid</button>
+        <button class="pill" data-cat="vallisneria">Ribbon Plant</button>
+        <button class="pill" data-cat="stem_plant">Stem Plant</button>
+        <button class="pill" data-cat="broadleaf_coral">Anubias / Coral</button>
       </div>
     </div>
 
     <div class="bottom-bar">
       <div class="action-dock">
-        <button class="btn btn-primary" id="btn-next">⚡ Spawn Now</button>
-        <button class="btn" id="btn-mode">🌌 Mode: Swarm</button>
+        <button class="btn btn-primary" id="btn-next">🐠 Spawn Now</button>
+        <button class="btn" id="btn-mode">🌊 Mode: Aquarium</button>
         <button class="btn" id="btn-toggle-auto">⏸ Auto: ON</button>
-        <button class="btn" id="btn-wire-spin">🌀 Spin: ON</button>
-        <button class="btn" id="btn-clear">🗑 Clear</button>
+        <button class="btn" id="btn-wire-spin">🌀 Orbit: ON</button>
+        <button class="btn" id="btn-clear">🗑 Reset Tank</button>
         <div class="progress-wrap">
           <div class="progress-label">
-            <span>Next Forge</span>
-            <span id="countdown-text">2.0s</span>
+            <span>Next Spawn</span>
+            <span id="countdown-text">3.0s</span>
           </div>
           <div class="progress-track">
             <div class="progress-fill" id="progress-fill"></div>
@@ -307,7 +303,7 @@
       </div>
 
       <div class="hint">
-        Drag: Orbit &nbsp;|&nbsp; Scroll: Zoom &nbsp;|&nbsp; <kbd>Space</kbd> Next &nbsp;|&nbsp; <kbd>H</kbd> Hide UI
+        Drag: Orbit &nbsp;|&nbsp; Scroll: Zoom &nbsp;|&nbsp; <kbd>Space</kbd> Spawn &nbsp;|&nbsp; <kbd>H</kbd> Hide UI
       </div>
     </div>
   </div>
@@ -323,7 +319,7 @@
 
   <script type="module">
     // =========================================================================
-    // 1. Seeded PRNG & Math Utilities
+    // 1. Seeded PRNG, Math & Aquarium Constants
     // =========================================================================
     function mulberry32(seed) {
       let a = seed >>> 0;
@@ -359,6 +355,11 @@
         const l = Math.hypot(a[0], a[1], a[2]) || 1;
         return [a[0] / l, a[1] / l, a[2] / l];
       },
+      lerp: (a, b, t) => [
+        a[0] + (b[0] - a[0]) * t,
+        a[1] + (b[1] - a[1]) * t,
+        a[2] + (b[2] - a[2]) * t,
+      ],
     };
 
     function mat4Perspective(fovY, aspect, near, far) {
@@ -398,20 +399,33 @@
       return out;
     }
 
-    function mat4RotateYScale(angle, scale) {
-      const c = Math.cos(angle) * scale;
-      const s = Math.sin(angle) * scale;
+    function mat4Transform3D(tx, ty, tz, yaw, pitch, scale) {
+      const cy = Math.cos(yaw), sy = Math.sin(yaw);
+      const cp = Math.cos(pitch), sp = Math.sin(pitch);
       return new Float32Array([
-        c, 0, -s, 0,
-        0, scale, 0, 0,
-        s, 0, c, 0,
-        0, 0, 0, 1,
+        cy * scale, 0, -sy * scale, 0,
+        sy * sp * scale, cp * scale, cy * sp * scale, 0,
+        sy * cp * scale, -sp * scale, cy * cp * scale, 0,
+        tx, ty, tz, 1,
       ]);
+    }
+
+    const TANK_HALF_W = 5.8;
+    const TANK_HALF_D = 3.2;
+    const TANK_BASE_Y = -2.2;
+    const TANK_WATER_Y = 2.95;
+    const TANK_RIM_TOP = 3.25;
+
+    function sandHeight(x, z) {
+      const backSlope = 0.22 * Math.max(0, -z / TANK_HALF_D);
+      const mound = 0.22 * Math.sin(x * 0.42 + 0.5) * Math.cos(z * 0.55);
+      const ripple = 0.05 * Math.sin(x * 1.45 - z * 1.15);
+      return -1.94 + mound + backSlope + ripple;
     }
 
     // =========================================================================
     // 2. Procedural Mesh Builder (13 floats/vert: pos3, norm3, col3, attrs4)
-    //    attrs = [emissive, animWeight, phase, materialParam (metal/roughness)]
+    //    attrs = [emissive, animWeight, phase, metalOrType]
     // =========================================================================
     const FLOATS_PER_VERT = 13;
 
@@ -443,6 +457,12 @@
           this.pushVert(p2, n, c2, m2);
           this.pushVert(p3, n, c3, m3);
         }
+      }
+
+      addTriNorm(p1, p2, p3, n1, n2, n3, c1, c2, c3, m1, m2, m3) {
+        this.pushVert(p1, n1, c1, m1);
+        this.pushVert(p2, n2, c2, m2);
+        this.pushVert(p3, n3, c3, m3);
       }
 
       addQuad(p1, p2, p3, p4, c1, c2, c3, c4, m1, m2, m3, m4) {
@@ -531,6 +551,73 @@
         this.addLoft(rings, colorFn, metaFn, capStart, capEnd);
       }
 
+      addLeafBlade(points, widths, normalHint, colorFn, metaFn, crease = 0.08) {
+        const rows = [];
+        let prevHint = normalHint || [0, 0, 1];
+        for (let i = 0; i < points.length; i++) {
+          const p = points[i];
+          const tan = i === 0
+            ? v3.norm(v3.sub(points[1], points[0]))
+            : i === points.length - 1
+              ? v3.norm(v3.sub(points[i], points[i - 1]))
+              : v3.norm(v3.sub(points[i + 1], points[i - 1]));
+          let hint = prevHint;
+          if (Math.abs(v3.dot(tan, hint)) > 0.95) {
+            hint = Math.abs(tan[0]) < 0.85 ? [1, 0, 0] : [0, 1, 0];
+          }
+          const side = v3.norm(v3.cross(hint, tan));
+          const up = v3.norm(v3.cross(tan, side));
+          prevHint = up;
+          const w = widths[i];
+          rows.push([
+            v3.sub(p, v3.mul(side, w)),
+            v3.add(p, v3.mul(up, w * crease)),
+            v3.add(p, v3.mul(side, w)),
+          ]);
+        }
+        for (let i = 0; i < rows.length - 1; i++) {
+          const t0 = i / (rows.length - 1);
+          const t1 = (i + 1) / (rows.length - 1);
+          // Left half
+          this.addQuad(
+            rows[i][0], rows[i][1], rows[i + 1][1], rows[i + 1][0],
+            colorFn(t0, 0), colorFn(t0, 0.5), colorFn(t1, 0.5), colorFn(t1, 0),
+            metaFn(t0, 0), metaFn(t0, 0.5), metaFn(t1, 0.5), metaFn(t1, 0)
+          );
+          // Right half
+          this.addQuad(
+            rows[i][1], rows[i][2], rows[i + 1][2], rows[i + 1][1],
+            colorFn(t0, 0.5), colorFn(t0, 1), colorFn(t1, 1), colorFn(t1, 0.5),
+            metaFn(t0, 0.5), metaFn(t0, 1), metaFn(t1, 1), metaFn(t1, 0.5)
+          );
+        }
+      }
+
+      addEllipsoid(center, rx, ry, rz, segsU, segsV, colorFn, metaFn, displaceFn = null) {
+        const rings = [];
+        for (let iv = 0; iv <= segsV; iv++) {
+          const v = iv / segsV;
+          const phi = v * Math.PI;
+          const sp = Math.sin(phi), cp = Math.cos(phi);
+          const ring = [];
+          for (let iu = 0; iu < segsU; iu++) {
+            const u = iu / segsU;
+            const theta = u * Math.PI * 2;
+            const nx = sp * Math.cos(theta);
+            const ny = cp;
+            const nz = sp * Math.sin(theta);
+            const disp = displaceFn ? displaceFn(nx, ny, nz) : 1.0;
+            ring.push([
+              center[0] + nx * rx * disp,
+              center[1] + ny * ry * disp,
+              center[2] + nz * rz * disp,
+            ]);
+          }
+          rings.push(ring);
+        }
+        this.addLoft(rings, colorFn, metaFn, false, false);
+      }
+
       addBox(center, size, rotY, color, meta) {
         const hx = size[0] * 0.5, hy = size[1] * 0.5, hz = size[2] * 0.5;
         const c = Math.cos(rotY), s = Math.sin(rotY);
@@ -559,7 +646,7 @@
 
       addPrism(base, dir, len, rBot, rTop, sides, tipH, colorBot, colorTop, metaBot, metaTop) {
         const d = v3.norm(dir);
-        let ref = Math.abs(d[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
+        const ref = Math.abs(d[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
         const right = v3.norm(v3.cross(ref, d));
         const up = v3.norm(v3.cross(d, right));
         const topCenter = v3.add(base, v3.mul(d, len));
@@ -589,7 +676,7 @@
         }
       }
 
-      finalize(smoothNormals = true) {
+      finalize(smoothNormals = true, anchorBottom = false) {
         const arr = new Float32Array(this.verts);
         const vertCount = arr.length / FLOATS_PER_VERT;
         let minX = Infinity, minY = Infinity, minZ = Infinity;
@@ -603,15 +690,15 @@
         const cx = (minX + maxX) * 0.5;
         const cy = (minY + maxY) * 0.5;
         const cz = (minZ + maxZ) * 0.5;
+        const yOff = anchorBottom ? minY : cy;
         const span = Math.max(maxX - minX, maxY - minY, maxZ - minZ, 0.001);
         const scale = 2.85 / span;
         for (let i = 0; i < arr.length; i += FLOATS_PER_VERT) {
           arr[i] = (arr[i] - cx) * scale;
-          arr[i + 1] = (arr[i + 1] - cy) * scale;
+          arr[i + 1] = (arr[i + 1] - yOff) * scale;
           arr[i + 2] = (arr[i + 2] - cz) * scale;
         }
 
-        // Smooth vertex normal welding for organic / curved models
         if (smoothNormals) {
           const accum = new Map();
           for (let i = 0; i < arr.length; i += FLOATS_PER_VERT) {
@@ -640,103 +727,513 @@
 
         return { data: arr, vertCount, triCount: Math.floor(vertCount / 3) };
       }
+
+      raw() {
+        const arr = new Float32Array(this.verts);
+        return { data: arr, vertCount: arr.length / FLOATS_PER_VERT };
+      }
     }
 
     // =========================================================================
-    // 3. High-Detail Procedural Model Generators
+    // 3. Aquarium Environment Builders (Sand, Rocks, Driftwood, Tank, Water)
+    // =========================================================================
+    function buildAquariumEnvironment() {
+      // 3a. Substrate & Hardscape (surfaceFlag = 1)
+      const subMb = new MeshBuilder();
+      const nx = 48, nz = 28;
+      const hw = TANK_HALF_W - 0.04;
+      const hd = TANK_HALF_D - 0.04;
+
+      const grid = [];
+      for (let iz = 0; iz <= nz; iz++) {
+        const row = [];
+        const z = -hd + (iz / nz) * (2 * hd);
+        for (let ix = 0; ix <= nx; ix++) {
+          const x = -hw + (ix / nx) * (2 * hw);
+          row.push([x, sandHeight(x, z), z]);
+        }
+        grid.push(row);
+      }
+
+      const sandColor = (x, z) => {
+        const v = Math.sin(x * 3.1 + z * 2.4) * 0.04 + Math.cos(x * 7.2 - z * 5.1) * 0.02;
+        return [0.64 + v, 0.58 + v * 0.9, 0.45 + v * 0.7];
+      };
+      const sandMeta = [0.0, 0.0, 0.0, 0.05];
+
+      for (let iz = 0; iz < nz; iz++) {
+        for (let ix = 0; ix < nx; ix++) {
+          const p1 = grid[iz][ix];
+          const p2 = grid[iz][ix + 1];
+          const p3 = grid[iz + 1][ix + 1];
+          const p4 = grid[iz + 1][ix];
+          subMb.addQuad(
+            p1, p4, p3, p2,
+            sandColor(p1[0], p1[2]), sandColor(p4[0], p4[2]), sandColor(p3[0], p3[2]), sandColor(p2[0], p2[2]),
+            sandMeta, sandMeta, sandMeta, sandMeta
+          );
+        }
+      }
+
+      // Sand side skirts down to TANK_BASE_Y (visible through glass!)
+      const skirtCol = [0.46, 0.41, 0.32];
+      for (let ix = 0; ix < nx; ix++) {
+        // Front (+Z) & Back (-Z)
+        const pf1 = grid[nz][ix], pf2 = grid[nz][ix + 1];
+        subMb.addQuad(
+          pf1, [pf1[0], TANK_BASE_Y + 0.02, pf1[2]], [pf2[0], TANK_BASE_Y + 0.02, pf2[2]], pf2,
+          sandColor(pf1[0], pf1[2]), skirtCol, skirtCol, sandColor(pf2[0], pf2[2]),
+          sandMeta, sandMeta, sandMeta, sandMeta
+        );
+        const pb1 = grid[0][ix], pb2 = grid[0][ix + 1];
+        subMb.addQuad(
+          pb2, [pb2[0], TANK_BASE_Y + 0.02, pb2[2]], [pb1[0], TANK_BASE_Y + 0.02, pb1[2]], pb1,
+          sandColor(pb2[0], pb2[2]), skirtCol, skirtCol, sandColor(pb1[0], pb1[2]),
+          sandMeta, sandMeta, sandMeta, sandMeta
+        );
+      }
+      for (let iz = 0; iz < nz; iz++) {
+        // Left (-X) & Right (+X)
+        const pl1 = grid[iz][0], pl2 = grid[iz + 1][0];
+        subMb.addQuad(
+          pl1, [pl1[0], TANK_BASE_Y + 0.02, pl1[2]], [pl2[0], TANK_BASE_Y + 0.02, pl2[2]], pl2,
+          sandColor(pl1[0], pl1[2]), skirtCol, skirtCol, sandColor(pl2[0], pl2[2]),
+          sandMeta, sandMeta, sandMeta, sandMeta
+        );
+        const pr1 = grid[iz][nx], pr2 = grid[iz + 1][nx];
+        subMb.addQuad(
+          pr2, [pr2[0], TANK_BASE_Y + 0.02, pr2[2]], [pr1[0], TANK_BASE_Y + 0.02, pr1[2]], pr1,
+          sandColor(pr2[0], pr2[2]), skirtCol, skirtCol, sandColor(pr1[0], pr1[2]),
+          sandMeta, sandMeta, sandMeta, sandMeta
+        );
+      }
+
+      // Smooth River Stones & Slate Rocks
+      const rocks = [
+        { x: -3.4, z: -1.35, rx: 1.05, ry: 0.72, rz: 0.88, seed: 1.1 },
+        { x: -2.2, z: -1.75, rx: 0.72, ry: 0.55, rz: 0.65, seed: 2.4 },
+        { x: -4.15, z: -0.35, rx: 0.65, ry: 0.42, rz: 0.58, seed: 3.7 },
+        { x: 3.15, z: -1.4, rx: 1.12, ry: 0.78, rz: 0.84, seed: 4.5 },
+        { x: 4.25, z: -0.75, rx: 0.62, ry: 0.45, rz: 0.55, seed: 5.9 },
+        { x: 1.85, z: -1.95, rx: 0.58, ry: 0.42, rz: 0.52, seed: 6.3 },
+        { x: -0.45, z: -1.85, rx: 0.55, ry: 0.34, rz: 0.48, seed: 7.2 },
+      ];
+      for (const rk of rocks) {
+        const baseY = sandHeight(rk.x, rk.z) + rk.ry * 0.32;
+        subMb.addEllipsoid(
+          [rk.x, baseY, rk.z], rk.rx, rk.ry, rk.rz, 18, 12,
+          (v, u) => {
+            const moss = v < 0.38 ? 1.0 - v / 0.38 : 0.0;
+            const shade = 0.22 + 0.08 * Math.sin(u * Math.PI * 6 + rk.seed);
+            return [
+              shade * (1 - moss * 0.28) + moss * 0.09,
+              shade + moss * 0.14,
+              shade * 1.05 - moss * 0.04,
+            ];
+          },
+          () => [0, 0, 0, 0.15],
+          (nx2, ny2, nz2) => 1.0 + 0.12 * Math.sin(nx2 * 4.2 + rk.seed) * Math.cos(nz2 * 3.8 - ny2 * 2.5)
+        );
+      }
+
+      // Branching Sunken Driftwood arching across left/center
+      const woodCol = (t) => [0.24 - t * 0.06, 0.15 - t * 0.03, 0.09 - t * 0.02];
+      const woodMeta = () => [0, 0, 0, 0.1];
+      const dwBaseY = sandHeight(-3.1, -1.1) - 0.1;
+      subMb.addTube(
+        [
+          [-3.25, dwBaseY, -1.2],
+          [-2.4, dwBaseY + 0.65, -0.85],
+          [-1.35, dwBaseY + 1.15, -0.55],
+          [-0.25, dwBaseY + 1.38, -0.35],
+          [0.72, dwBaseY + 1.55, -0.45],
+        ],
+        [0.24, 0.18, 0.14, 0.09, 0.03], 10, woodCol, woodMeta
+      );
+      subMb.addTube(
+        [
+          [-1.7, dwBaseY + 0.95, -0.65],
+          [-1.2, dwBaseY + 1.48, -1.05],
+          [-0.65, dwBaseY + 1.88, -1.25],
+        ],
+        [0.11, 0.07, 0.025], 8, woodCol, woodMeta
+      );
+      subMb.addTube(
+        [
+          [-2.6, dwBaseY + 0.5, -0.92],
+          [-2.15, dwBaseY + 0.25, -0.25],
+          [-1.6, sandHeight(-1.6, 0.15) - 0.04, 0.15],
+        ],
+        [0.14, 0.1, 0.06], 8, woodCol, woodMeta
+      );
+
+      // Small Air-stone Diffuser near back-right rock
+      const airX = 3.55, airZ = -1.1;
+      const airY = sandHeight(airX, airZ) + 0.02;
+      subMb.addPrism(
+        [airX, airY, airZ], [0, 1, 0], 0.14, 0.18, 0.14, 12, 0.04,
+        [0.35, 0.4, 0.44], [0.55, 0.62, 0.68], [0, 0, 0, 0.2], [0.1, 0, 0, 0.2]
+      );
+
+      const substrateMesh = subMb.raw();
+
+      // 3b. Tank Cabinet Plinth, Rim Frame & Overhead Daylight LED Bar (surfaceFlag = 2)
+      const frameMb = new MeshBuilder();
+      const darkMetal = [0.06, 0.075, 0.095];
+      const metalMeta = [0.0, 0.0, 0.0, 0.72];
+      // Lower cabinet plinth
+      frameMb.addBox([0, TANK_BASE_Y - 0.22, 0], [TANK_HALF_W * 2 + 0.34, 0.44, TANK_HALF_D * 2 + 0.34], 0, darkMetal, metalMeta);
+      // Slim bottom & top tank trim rails
+      const railT = 0.07;
+      for (const sgnZ of [-1, 1]) {
+        frameMb.addBox([0, TANK_RIM_TOP, sgnZ * TANK_HALF_D], [TANK_HALF_W * 2 + railT, railT, railT], 0, darkMetal, metalMeta);
+        frameMb.addBox([0, TANK_BASE_Y, sgnZ * TANK_HALF_D], [TANK_HALF_W * 2 + railT, railT, railT], 0, darkMetal, metalMeta);
+      }
+      for (const sgnX of [-1, 1]) {
+        frameMb.addBox([sgnX * TANK_HALF_W, TANK_RIM_TOP, 0], [railT, railT, TANK_HALF_D * 2 + railT], 0, darkMetal, metalMeta);
+        frameMb.addBox([sgnX * TANK_HALF_W, TANK_BASE_Y, 0], [railT, railT, TANK_HALF_D * 2 + railT], 0, darkMetal, metalMeta);
+        // Corner vertical silicone / aluminum posts
+        for (const sgnZ of [-1, 1]) {
+          frameMb.addBox(
+            [sgnX * TANK_HALF_W, (TANK_BASE_Y + TANK_RIM_TOP) * 0.5, sgnZ * TANK_HALF_D],
+            [0.055, TANK_RIM_TOP - TANK_BASE_Y, 0.055], 0, [0.04, 0.05, 0.065], metalMeta
+          );
+        }
+        // Overhead LED fixture side brackets
+        frameMb.addBox([sgnX * (TANK_HALF_W - 0.55), TANK_RIM_TOP + 0.36, 0], [0.08, 0.72, 0.14], 0, darkMetal, metalMeta);
+      }
+      // Overhead LED housing + glowing daylight diffuser underside
+      frameMb.addBox([0, TANK_RIM_TOP + 0.74, 0], [TANK_HALF_W * 2 - 0.9, 0.14, 0.75], 0, [0.09, 0.11, 0.14], metalMeta);
+      frameMb.addBox([0, TANK_RIM_TOP + 0.66, 0], [TANK_HALF_W * 2 - 1.25, 0.04, 0.45], 0, [0.95, 0.99, 1.0], [2.1, 0, 0, 0.1]);
+
+      const frameMesh = frameMb.raw();
+
+      // 3c. Transparent Glass Walls, Rippling Water Surface & Rising Bubbles
+      const watMb = new MeshBuilder();
+      const glassCol = [0.68, 0.92, 0.96];
+      const glassMeta = [0.0, 0.0, 0.0, 0.0]; // w = 0 -> Glass
+      const xW = TANK_HALF_W - 0.01, zD = TANK_HALF_D - 0.01;
+      // Front, Back, Left, Right glass panes
+      watMb.addQuad([-xW, TANK_BASE_Y, zD], [xW, TANK_BASE_Y, zD], [xW, TANK_RIM_TOP, zD], [-xW, TANK_RIM_TOP, zD], glassCol, glassCol, glassCol, glassCol, glassMeta, glassMeta, glassMeta, glassMeta);
+      watMb.addQuad([xW, TANK_BASE_Y, -zD], [-xW, TANK_BASE_Y, -zD], [-xW, TANK_RIM_TOP, -zD], [xW, TANK_RIM_TOP, -zD], glassCol, glassCol, glassCol, glassCol, glassMeta, glassMeta, glassMeta, glassMeta);
+      watMb.addQuad([-xW, TANK_BASE_Y, -zD], [-xW, TANK_BASE_Y, zD], [-xW, TANK_RIM_TOP, zD], [-xW, TANK_RIM_TOP, -zD], glassCol, glassCol, glassCol, glassCol, glassMeta, glassMeta, glassMeta, glassMeta);
+      watMb.addQuad([xW, TANK_BASE_Y, zD], [xW, TANK_BASE_Y, -zD], [xW, TANK_RIM_TOP, -zD], [xW, TANK_RIM_TOP, zD], glassCol, glassCol, glassCol, glassCol, glassMeta, glassMeta, glassMeta, glassMeta);
+
+      // Subdivided Water Surface (w = 1 -> Water Surface)
+      const wx = 42, wz = 24;
+      const whw = TANK_HALF_W - 0.03, whd = TANK_HALF_D - 0.03;
+      const watCol = [0.32, 0.78, 0.88];
+      const watMeta = [0.0, 0.0, 0.0, 1.0];
+      for (let iz = 0; iz < wz; iz++) {
+        const z0 = -whd + (iz / wz) * (2 * whd);
+        const z1 = -whd + ((iz + 1) / wz) * (2 * whd);
+        for (let ix = 0; ix < wx; ix++) {
+          const x0 = -whw + (ix / wx) * (2 * whw);
+          const x1 = -whw + ((ix + 1) / wx) * (2 * whw);
+          watMb.addQuad(
+            [x0, TANK_WATER_Y, z0], [x0, TANK_WATER_Y, z1], [x1, TANK_WATER_Y, z1], [x1, TANK_WATER_Y, z0],
+            watCol, watCol, watCol, watCol, watMeta, watMeta, watMeta, watMeta
+          );
+        }
+      }
+
+      // Rising Air Bubbles (w = 2 -> Bubble) — mostly tiny, rare larger ones
+      const bRng = mulberry32(90210);
+      const nBubbles = 76;
+      for (let b = 0; b < nBubbles; b++) {
+        const fromAirstone = b < 46;
+        const bx = fromAirstone
+          ? airX + (bRng() - 0.5) * 0.48
+          : (bRng() - 0.5) * (TANK_HALF_W * 1.75);
+        const bz = fromAirstone
+          ? airZ + (bRng() - 0.5) * 0.48
+          : (bRng() - 0.5) * (TANK_HALF_D * 1.65);
+        const startY = sandHeight(bx, bz) + 0.1;
+        const u = bRng();
+        const r = u < 0.78
+          ? 0.014 + bRng() * 0.022
+          : (u < 0.94 ? 0.032 + bRng() * 0.028 : 0.055 + bRng() * 0.035);
+        // Larger bubbles rise slower; overall slower than the old 0.18–0.36 range
+        const speed = (0.045 + bRng() * 0.05) * (0.04 / Math.max(r, 0.014));
+        const phase = bRng();
+        const bMeta = [startY, speed, phase, 2.0];
+        const bCol = [0.85, 0.96, 1.0];
+        watMb.addEllipsoid([bx, 0, bz], r, r * 0.92, r, 8, 5, () => bCol, () => bMeta);
+      }
+
+      const waterMesh = watMb.raw();
+      return { substrateMesh, frameMesh, waterMesh };
+    }
+
+    // =========================================================================
+    // 4. 10 Realistic Aquatic Creature & Aquatic Plant Generators
     // =========================================================================
     const NAME_PREFIX = [
-      "Abyssal", "Astral", "Luminous", "Chromatic", "Vortex", "Cryo",
-      "Obsidian", "Solaris", "Quantum", "Pelagic", "Hyperion", "Aether"
+      "Coral", "Azure", "Emerald", "Pearl", "Golden", "Jade",
+      "Silver", "Reef", "Lagoon", "Sakura", "Cobalt", "Amber"
     ];
 
     const GENERATORS = {
-      jellyfish(rng) {
+      tropical_fish(rng) {
         const mb = new MeshBuilder();
-        const hue = rng();
-        const hue2 = (hue + 0.18 + rng() * 0.25) % 1;
-        const bellSegs = 48;
-        const bellRings = 24;
-        const ribs = 8 + Math.floor(rng() * 10);
-        const bellHeight = 0.95 + rng() * 0.5;
-        const bellRadius = 1.05 + rng() * 0.45;
+        const speciesIdx = Math.floor(rng() * 4);
+        const speciesNames = ["Clownfish", "Regal Tang", "Sunburst Butterfly", "Cardinal Tetra"];
+        const bodyLen = 1.85 + rng() * 0.4;
+        const bodyH = speciesIdx === 2 ? 0.85 : (speciesIdx === 3 ? 0.42 : 0.62);
+        const bodyW = 0.22 + rng() * 0.06;
 
         const rings = [];
-        for (let i = 0; i < bellRings; i++) {
-          const t = i / (bellRings - 1);
-          const phi = t * Math.PI * 0.62;
-          const rBase = Math.sin(phi) * bellRadius;
-          const yBase = Math.cos(phi) * bellHeight;
+        const nSegs = 26, rSegs = 20;
+        for (let i = 0; i < nSegs; i++) {
+          const t = i / (nSegs - 1);
+          const z = (0.5 - t) * bodyLen;
+          const hEnv = Math.pow(Math.sin(Math.pow(t, 0.6) * Math.PI), 0.78);
+          const wEnv = Math.sin(Math.pow(t, 0.52) * Math.PI);
+          const peduncle = t > 0.78 ? 0.18 + 0.08 * (1 - (t - 0.78) / 0.22) : 1.0;
+          const hh = 0.04 + bodyH * 0.5 * hEnv * (t > 0.78 ? 0.28 : 1.0);
+          const hw = 0.025 + bodyW * wEnv * peduncle;
           const ring = [];
-          for (let j = 0; j < bellSegs; j++) {
-            const ang = (j / bellSegs) * Math.PI * 2;
-            const ribWave = 1 + 0.075 * Math.sin(ang * ribs) * Math.sin(t * Math.PI);
-            const r = rBase * ribWave;
-            const y = yBase - 0.055 * Math.cos(ang * ribs) * Math.pow(t, 2);
-            ring.push([Math.cos(ang) * r, y, Math.sin(ang) * r]);
+          for (let j = 0; j < rSegs; j++) {
+            const a = (j / rSegs) * Math.PI * 2;
+            ring.push([Math.cos(a) * hw, Math.sin(a) * hh, z]);
           }
           rings.push(ring);
         }
+
+        const fishCol = (t, u) => {
+          const belly = Math.sin(u * Math.PI * 2) < -0.25 ? 1 : 0;
+          if (speciesIdx === 0) {
+            // Clownfish: Vivid orange + crisp white bands with dark rim
+            const band1 = Math.abs(t - 0.28);
+            const band2 = Math.abs(t - 0.58);
+            const band3 = Math.abs(t - 0.84);
+            const d = Math.min(band1, band2, band3);
+            if (d < 0.055) return [0.96, 0.96, 0.95];
+            if (d < 0.075) return [0.06, 0.05, 0.05];
+            return [0.95, 0.34, 0.07];
+          } else if (speciesIdx === 1) {
+            // Regal Tang: Royal blue + charcoal dorsal sweep + golden tail
+            if (t > 0.82) return [0.96, 0.82, 0.12];
+            if (Math.sin(u * Math.PI * 2) > 0.35 && t > 0.22 && t < 0.78) return [0.06, 0.09, 0.16];
+            return [0.08, 0.32, 0.86];
+          } else if (speciesIdx === 2) {
+            // Butterflyfish: Warm sunlit gold + dark eye stripe + pearlescent belly
+            if (Math.abs(t - 0.18) < 0.055) return [0.08, 0.08, 0.1];
+            if (t > 0.76) return [0.96, 0.65, 0.1];
+            return belly ? [0.95, 0.92, 0.82] : [0.95, 0.76, 0.18];
+          }
+          // Cardinal / Neon Tetra: Iridescent cyan dorsal stripe + crimson lower flank
+          if (Math.sin(u * Math.PI * 2) > 0.15) return [0.08, 0.78, 0.92];
+          return t > 0.32 ? [0.88, 0.14, 0.18] : [0.85, 0.9, 0.94];
+        };
+
         mb.addLoft(
           rings,
-          (t, u) => hslToRgb(hue + t * 0.12, 0.85, 0.42 + 0.18 * Math.sin(u * Math.PI * ribs)),
-          (t) => [0.25 + 1.15 * Math.pow(t, 2.2), 0.35 * t, t * 2.0, 0.15],
-          true, false
+          fishCol,
+          (t) => [0.0, Math.pow(t, 1.35), 0.0, speciesIdx === 3 ? 0.65 : 0.38],
+          true, true
         );
 
-        // Bioluminescent oral arms (frilly central ribbons)
-        for (let a = 0; a < 4; a++) {
-          const baseAng = (a / 4) * Math.PI * 2;
-          const pts = [], radii = [];
-          for (let s = 0; s < 20; s++) {
-            const st = s / 19;
-            const ang = baseAng + st * 2.2;
-            const r = 0.18 * Math.sin(st * Math.PI) + 0.05;
-            pts.push([Math.cos(ang) * r, 0.1 - st * 1.4, Math.sin(ang) * r]);
-            radii.push(0.065 * (1 - st * 0.7) * (1 + 0.35 * Math.sin(st * 18)));
-          }
-          mb.addTube(
-            pts, radii, 8,
-            (t) => hslToRgb(hue2, 0.95, 0.65),
-            (t) => [1.3 + t * 0.9, 0.25 + t * 0.8, a + t * 3.0, 0.1]
+        // Eyes
+        for (const side of [-1, 1]) {
+          mb.addEllipsoid(
+            [side * bodyW * 0.56, bodyH * 0.1, bodyLen * 0.33],
+            0.045, 0.055, 0.055, 10, 8,
+            (v) => (v < 0.38 ? [0.03, 0.03, 0.04] : [0.88, 0.84, 0.68]),
+            () => [0, 0.05, 0, 0.95]
           );
         }
 
-        // Trailing tentacles
-        const nTentacles = 12 + Math.floor(rng() * 10);
-        for (let k = 0; k < nTentacles; k++) {
-          const ang = (k / nTentacles) * Math.PI * 2 + (rng() - 0.5) * 0.18;
-          const rad = bellRadius * (0.4 + 0.48 * rng());
-          const len = 1.7 + rng() * 1.6;
-          const pts = [], radii = [];
-          const steps = 22;
-          const swirl = (rng() - 0.5) * 0.65;
-          for (let s = 0; s < steps; s++) {
-            const st = s / (steps - 1);
-            const a = ang + swirl * st;
-            const r = rad * (1 - st * 0.22) + Math.sin(st * 6 + k) * 0.07;
-            pts.push([Math.cos(a) * r, 0.12 - st * len, Math.sin(a) * r]);
-            radii.push((1 - st * 0.85) * (0.032 + rng() * 0.02));
-          }
-          mb.addTube(
-            pts, radii, 7,
-            (t) => hslToRgb(hue2 + t * 0.15, 0.9, 0.55),
-            (t) => [0.55 + t * 1.25, 0.2 + t * 0.95, k * 0.7 + t * 3.0, 0.08]
+        // Dorsal Fin
+        const dPts = [], dW = [];
+        for (let i = 0; i < 10; i++) {
+          const st = i / 9;
+          const z = bodyLen * (0.12 - st * 0.54);
+          const y = bodyH * 0.42 * (1 - st * 0.35);
+          dPts.push([0, y, z]);
+          dW.push(0.14 + 0.16 * Math.sin(st * Math.PI));
+        }
+        mb.addLeafBlade(
+          dPts, dW, [1, 0, 0],
+          (t) => (speciesIdx === 1 ? [0.08, 0.25, 0.75] : [0.95, 0.58, 0.18]),
+          (t) => [0, 0.35 + t * 0.4, 0, 0.2], 0.04
+        );
+
+        // Forked Tail Fin
+        const cPts = [], cW = [];
+        for (let i = 0; i < 8; i++) {
+          const st = i / 7;
+          cPts.push([0, 0, -bodyLen * 0.46 - st * 0.44]);
+          cW.push(0.08 + st * 0.32);
+        }
+        mb.addLeafBlade(
+          cPts, cW, [1, 0, 0],
+          (t) => (speciesIdx === 1 ? [0.96, 0.84, 0.15] : [0.95, 0.72, 0.35]),
+          (t) => [0, 0.85 + t * 0.35, 0, 0.2], 0.02
+        );
+
+        // Pectoral Fins
+        for (const side of [-1, 1]) {
+          mb.addLeafBlade(
+            [[side * bodyW * 0.7, -0.05, bodyLen * 0.16], [side * (bodyW + 0.22), -0.1, bodyLen * 0.04], [side * (bodyW + 0.34), -0.14, -bodyLen * 0.08]],
+            [0.05, 0.11, 0.07],
+            [0, 1, 0],
+            () => [0.92, 0.78, 0.48],
+            (t) => [0, 0.2 + t * 0.35, side, 0.15], 0.03
           );
         }
 
-        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Medusa`;
-        return { mesh: mb.finalize(true), name, animMode: 1, sss: 0.85, accent: hslToRgb(hue2, 1, 0.6) };
+        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} ${speciesNames[speciesIdx]}`;
+        return { mesh: mb.finalize(true), name, animMode: 4, sss: 0.38, accent: [0.3, 0.85, 0.9] };
       },
 
-      leviathan(rng) {
+      koi(rng) {
         const mb = new MeshBuilder();
-        const hue = rng();
-        const hueGlow = (hue + 0.45) % 1;
-        const bodyLen = 2.7 + rng() * 1.1;
-        const wingSpan = 1.9 + rng() * 1.3;
-        const segs = 32;
-        const ringSegs = 28;
+        const bodyLen = 2.25 + rng() * 0.45;
+        const bodyH = 0.54;
+        const bodyW = 0.34;
+        const seedOff = rng() * 20.0;
+        const hasSumi = rng() > 0.35;
+
+        const rings = [];
+        const nSegs = 30, rSegs = 22;
+        for (let i = 0; i < nSegs; i++) {
+          const t = i / (nSegs - 1);
+          const z = (0.5 - t) * bodyLen;
+          const env = Math.sin(Math.pow(t, 0.56) * Math.PI);
+          const hh = 0.04 + bodyH * 0.5 * env * (t > 0.8 ? 0.35 : 1.0);
+          const hw = 0.03 + bodyW * 0.55 * env * (t > 0.8 ? 0.3 : 1.0);
+          const ring = [];
+          for (let j = 0; j < rSegs; j++) {
+            const a = (j / rSegs) * Math.PI * 2;
+            ring.push([Math.cos(a) * hw, Math.sin(a) * hh, z]);
+          }
+          rings.push(ring);
+        }
+
+        const koiColor = (t, u) => {
+          const ang = u * Math.PI * 2;
+          if (Math.sin(ang) < -0.45) return [0.95, 0.94, 0.91]; // Pearly belly
+          const patch = Math.sin(t * 7.5 + seedOff) * Math.cos(ang * 2.0 + seedOff * 0.7)
+                      + 0.45 * Math.sin(t * 14.0 - ang * 3.0);
+          if (hasSumi && patch < -0.58) return [0.09, 0.09, 0.11]; // Sumi black ink
+          if (patch > 0.12) return [0.92, 0.26, 0.08]; // Hi vermilion-orange
+          return [0.96, 0.94, 0.9]; // Shiroji white
+        };
+
+        mb.addLoft(rings, koiColor, (t) => [0.0, Math.pow(t, 1.3), 0.0, 0.32], true, true);
+
+        // Eyes & small barbels
+        for (const side of [-1, 1]) {
+          mb.addEllipsoid(
+            [side * bodyW * 0.42, bodyH * 0.1, bodyLen * 0.36],
+            0.045, 0.05, 0.05, 10, 8,
+            (v) => (v < 0.4 ? [0.03, 0.03, 0.04] : [0.85, 0.65, 0.25]),
+            () => [0, 0.04, 0, 0.92]
+          );
+          mb.addTube(
+            [[side * 0.08, -0.05, bodyLen * 0.46], [side * 0.16, -0.1, bodyLen * 0.42], [side * 0.2, -0.15, bodyLen * 0.36]],
+            [0.018, 0.012, 0.005], 5,
+            () => [0.92, 0.62, 0.42], (t) => [0, 0.2 * t, side, 0.1]
+          );
+        }
+
+        // Flowing Veil Tail
+        const tailPts = [], tailW = [];
+        for (let i = 0; i < 10; i++) {
+          const st = i / 9;
+          tailPts.push([0, -st * 0.06, -bodyLen * 0.48 - st * 0.62]);
+          tailW.push(0.08 + st * 0.42);
+        }
+        mb.addLeafBlade(
+          tailPts, tailW, [1, 0, 0],
+          (t) => [0.96, 0.65 - t * 0.2, 0.45 - t * 0.15],
+          (t) => [0, 0.85 + t * 0.45, 0, 0.15], 0.03
+        );
+
+        // Wide Pectoral Fins
+        for (const side of [-1, 1]) {
+          mb.addLeafBlade(
+            [[side * bodyW * 0.5, -0.07, bodyLen * 0.18], [side * (bodyW + 0.24), -0.12, bodyLen * 0.04], [side * (bodyW + 0.38), -0.16, -bodyLen * 0.12]],
+            [0.07, 0.15, 0.09],
+            [0, 1, 0],
+            () => [0.95, 0.88, 0.8],
+            (t) => [0, 0.25 + t * 0.35, side, 0.15], 0.04
+          );
+        }
+
+        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Nishikigoi`;
+        return { mesh: mb.finalize(true), name, animMode: 4, sss: 0.42, accent: [0.95, 0.55, 0.25] };
+      },
+
+      turtle(rng) {
+        const mb = new MeshBuilder();
+        const hue = 0.22 + rng() * 0.12; // Olive / sea-green / warm bronze
+        const shellCol = hslToRgb(hue, 0.45, 0.28);
+        const scuteRim = hslToRgb(hue - 0.08, 0.5, 0.44);
+        const bellyCol = [0.84, 0.8, 0.65];
+        const skinCol = hslToRgb(hue, 0.38, 0.34);
+
+        // Domed Carapace + Plastron
+        mb.addEllipsoid(
+          [0, 0.04, -0.05], 0.68, 0.34, 0.88, 28, 18,
+          (v, u) => {
+            if (v > 0.54) return bellyCol;
+            const scute = Math.abs(Math.sin(v * Math.PI * 5) * Math.cos(u * Math.PI * 6));
+            return scute < 0.16 ? scuteRim : shellCol;
+          },
+          () => [0, 0.05, 0, 0.28],
+          (nx, ny, nz) => ny < 0 ? 0.55 : 1.0 + 0.03 * Math.sin(nx * 10) * Math.cos(nz * 10)
+        );
+
+        // Head & Neck (+Z forward)
+        mb.addTube(
+          [[0, 0.02, 0.72], [0, 0.08, 0.98], [0, 0.09, 1.22]],
+          [0.16, 0.15, 0.12], 12,
+          () => skinCol, () => [0, 0.08, 0, 0.2]
+        );
+        for (const side of [-1, 1]) {
+          mb.addEllipsoid([side * 0.11, 0.13, 1.15], 0.038, 0.038, 0.038, 8, 6, () => [0.04, 0.04, 0.05], () => [0, 0.08, 0, 0.9]);
+        }
+
+        // Long Swept Front Flippers (high animWeight for wing-like swimming stroke)
+        for (const side of [-1, 1]) {
+          mb.addLeafBlade(
+            [
+              [side * 0.34, -0.02, 0.42],
+              [side * 0.72, -0.04, 0.32],
+              [side * 1.18, -0.06, 0.16],
+              [side * 1.65, -0.08, -0.18],
+            ],
+            [0.18, 0.22, 0.19, 0.08],
+            [0, 1, 0],
+            (t) => v3.lerp(skinCol, scuteRim, t * 0.4),
+            (t) => [0, Math.max(0, t - 0.18) * 1.0, 0, 0.22], 0.08
+          );
+          // Rear Flippers
+          mb.addLeafBlade(
+            [
+              [side * 0.2, -0.04, -0.66],
+              [side * 0.44, -0.06, -0.92],
+              [side * 0.68, -0.08, -1.24],
+            ],
+            [0.12, 0.14, 0.06],
+            [0, 1, 0],
+            () => skinCol,
+            (t) => [0, Math.max(0, t - 0.15) * 0.4, 0, 0.2], 0.06
+          );
+        }
+
+        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Sea Turtle`;
+        return { mesh: mb.finalize(true), name, animMode: 2, sss: 0.25, accent: [0.35, 0.85, 0.72] };
+      },
+
+      manta(rng) {
+        const mb = new MeshBuilder();
+        const hue = 0.55 + rng() * 0.08; // Deep slate-navy / teal-grey
+        const bodyLen = 2.4 + rng() * 0.7;
+        const wingSpan = 2.0 + rng() * 0.9;
+        const segs = 32, ringSegs = 28;
 
         const rings = [];
         for (let i = 0; i < segs; i++) {
@@ -744,16 +1241,15 @@
           const z = (0.5 - t) * bodyLen;
           const wingEnv = Math.sin(Math.pow(t, 0.72) * Math.PI);
           const halfW = 0.18 + wingSpan * Math.pow(wingEnv, 1.38);
-          const halfH = 0.05 + 0.23 * Math.sin(t * Math.PI) * (1 - t * 0.4);
+          const halfH = 0.05 + 0.22 * Math.sin(t * Math.PI) * (1 - t * 0.4);
           const ring = [];
           for (let j = 0; j < ringSegs; j++) {
             const ang = (j / ringSegs) * Math.PI * 2;
-            const ca = Math.cos(ang);
-            const sa = Math.sin(ang);
-            const wingCurve = Math.pow(Math.abs(ca), 1.6) * 0.18 * wingEnv;
+            const ca = Math.cos(ang), sa = Math.sin(ang);
+            const wingCurve = Math.pow(Math.abs(ca), 1.6) * 0.16 * wingEnv;
             ring.push([
               ca * halfW,
-              sa * halfH - wingCurve + Math.sin(t * Math.PI * 2) * 0.04,
+              sa * halfH - wingCurve + Math.sin(t * Math.PI * 2) * 0.03,
               z - Math.abs(ca) * 0.45 * wingEnv,
             ]);
           }
@@ -763,650 +1259,381 @@
         mb.addLoft(
           rings,
           (t, u) => {
-            const stripe = Math.sin(u * Math.PI * 6) > 0.72 ? 0.22 : 0;
-            return hslToRgb(hue + stripe, 0.72, 0.3 + 0.24 * (1 - t));
+            const isBelly = Math.sin(u * Math.PI * 2) < -0.05;
+            if (isBelly) return [0.88, 0.91, 0.93];
+            const spot = Math.sin(t * 16 + u * 22) > 0.78 ? 0.14 : 0.0;
+            return hslToRgb(hue, 0.42, 0.16 + spot + 0.08 * (1 - t));
           },
-          (t, u) => {
-            const edgeGlow = Math.abs(Math.cos(u * Math.PI * 2)) > 0.88 ? 1.55 : 0.12;
-            return [edgeGlow, 0.75, t * 4.0, 0.25];
-          },
+          (t) => [0.0, 0.75, t * 3.0, 0.35],
           true, true
         );
 
-        const tailPts = [], tailRad = [];
-        for (let i = 0; i < 18; i++) {
-          const st = i / 17;
-          tailPts.push([
-            Math.sin(st * 4.5) * 0.12 * st,
-            Math.cos(st * 3.0) * 0.08 * st,
-            -bodyLen * 0.48 - st * 1.45,
-          ]);
-          tailRad.push(0.055 * (1 - st * 0.88));
-        }
-        mb.addTube(
-          tailPts, tailRad, 8,
-          (t) => hslToRgb(hueGlow, 0.9, 0.55),
-          (t) => [0.9 + t * 1.1, 0.85, t * 5.0, 0.2]
-        );
-
-        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Manta`;
-        return { mesh: mb.finalize(true), name, animMode: 2, sss: 0.55, accent: hslToRgb(hueGlow, 1, 0.6) };
-      },
-
-      flora(rng) {
-        const mb = new MeshBuilder();
-        const hue = rng();
-        const tipHue = (hue + 0.32 + rng() * 0.2) % 1;
-        const maxDepth = 4;
-
-        function growBranch(pos, dir, len, rad, depth) {
-          const steps = 8;
-          const pts = [], radii = [];
-          let cur = pos;
-          let curDir = v3.norm(dir);
-          const bend = [(rng() - 0.5) * 0.25, 0.15, (rng() - 0.5) * 0.25];
-          for (let i = 0; i < steps; i++) {
-            const t = i / (steps - 1);
-            pts.push(cur);
-            radii.push(rad * (1 - t * 0.42));
-            curDir = v3.norm(v3.add(curDir, v3.mul(bend, 0.22)));
-            cur = v3.add(cur, v3.mul(curDir, len / (steps - 1)));
-          }
+        // Cephalic lobes at front (+Z)
+        for (const side of [-1, 1]) {
           mb.addTube(
-            pts, radii, depth === 0 ? 14 : 9,
-            (t) => hslToRgb(hue + depth * 0.04 + t * 0.05, 0.6, 0.28 + depth * 0.06),
-            (t) => [depth >= maxDepth - 1 ? 0.5 : 0.05, 0.15 * (depth + t), depth * 1.2, 0.1]
+            [[side * 0.22, -0.02, bodyLen * 0.44], [side * 0.26, -0.04, bodyLen * 0.62], [side * 0.2, -0.06, bodyLen * 0.74]],
+            [0.065, 0.05, 0.025], 8,
+            () => hslToRgb(hue, 0.35, 0.22),
+            () => [0, 0.15, 0, 0.3]
           );
-
-          if (depth < maxDepth) {
-            const branches = depth === 0 ? 3 + Math.floor(rng() * 3) : 2 + Math.floor(rng() * 2);
-            for (let b = 0; b < branches; b++) {
-              const ang = (b / branches) * Math.PI * 2 + rng() * 0.6;
-              const spread = 0.45 + rng() * 0.45;
-              const newDir = v3.norm([
-                curDir[0] + Math.cos(ang) * spread,
-                curDir[1] + 0.45,
-                curDir[2] + Math.sin(ang) * spread,
-              ]);
-              growBranch(cur, newDir, len * (0.65 + rng() * 0.15), rad * 0.62, depth + 1);
-            }
-          } else {
-            mb.addPrism(
-              cur, curDir, 0.14, rad * 1.6, rad * 2.2, 8, 0.1,
-              hslToRgb(tipHue, 0.95, 0.58), hslToRgb(tipHue, 1.0, 0.78),
-              [1.6, 0.3, rng() * 6, 0.1], [2.4, 0.35, rng() * 6, 0.1]
-            );
-          }
         }
 
-        growBranch([0, -1.2, 0], [0, 1, 0], 1.1, 0.22, 0);
-        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Coral`;
-        return { mesh: mb.finalize(true), name, animMode: 1, sss: 0.6, accent: hslToRgb(tipHue, 1, 0.6) };
+        // Slender Tail
+        const tailPts = [], tailRad = [];
+        for (let i = 0; i < 16; i++) {
+          const st = i / 15;
+          tailPts.push([Math.sin(st * 3.2) * 0.06 * st, Math.cos(st * 2.5) * 0.04 * st, -bodyLen * 0.48 - st * 1.4]);
+          tailRad.push(0.045 * (1 - st * 0.88));
+        }
+        mb.addTube(tailPts, tailRad, 7, () => hslToRgb(hue, 0.38, 0.18), (t) => [0, 0.85, t * 4.0, 0.25]);
+
+        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Manta Ray`;
+        return { mesh: mb.finalize(true), name, animMode: 2, sss: 0.3, accent: [0.32, 0.78, 0.92] };
       },
 
-      crystal(rng) {
+      jellyfish(rng) {
         const mb = new MeshBuilder();
-        const hue = rng();
-        const sides = 5 + Math.floor(rng() * 4);
-        const count = 18 + Math.floor(rng() * 14);
+        const palettes = [
+          { bell: [0.58, 0.85, 0.96], glow: [0.45, 0.82, 0.98] },
+          { bell: [0.94, 0.68, 0.82], glow: [0.95, 0.58, 0.78] },
+          { bell: [0.96, 0.78, 0.52], glow: [0.98, 0.65, 0.38] },
+        ];
+        const pal = palettes[Math.floor(rng() * palettes.length)];
+        const bellSegs = 44, bellRings = 22;
+        const ribs = 8 + Math.floor(rng() * 8);
+        const bellHeight = 0.85 + rng() * 0.35;
+        const bellRadius = 0.95 + rng() * 0.35;
 
-        for (let i = 0; i < 7; i++) {
-          const a = (i / 7) * Math.PI * 2;
-          mb.addPrism(
-            [Math.cos(a) * 0.25, -0.5, Math.sin(a) * 0.25],
-            [Math.cos(a) * 0.3, 0.8, Math.sin(a) * 0.3],
-            0.45, 0.68, 0.42, 6, 0.15,
-            [0.06, 0.07, 0.1], [0.11, 0.13, 0.18],
-            [0, 0, 0, 0.25], [0, 0, 0, 0.25]
-          );
-        }
-
-        for (let i = 0; i < count; i++) {
-          const isHero = i < 4;
-          const ang = rng() * Math.PI * 2;
-          const tilt = isHero ? rng() * 0.3 : 0.25 + rng() * 0.85;
-          const dir = [
-            Math.cos(ang) * Math.sin(tilt),
-            Math.cos(tilt),
-            Math.sin(ang) * Math.sin(tilt),
-          ];
-          const base = [
-            Math.cos(ang) * (isHero ? 0.1 : 0.38 * rng()),
-            -0.35 + rng() * 0.2,
-            Math.sin(ang) * (isHero ? 0.1 : 0.38 * rng()),
-          ];
-          const len = isHero ? 1.55 + rng() * 0.85 : 0.6 + rng() * 0.95;
-          const r = isHero ? 0.22 + rng() * 0.12 : 0.08 + rng() * 0.1;
-          const c1 = hslToRgb(hue + (rng() - 0.5) * 0.08, 0.85, 0.4);
-          const c2 = hslToRgb(hue + 0.08, 0.98, 0.72);
-          mb.addPrism(
-            base, dir, len, r, r * 0.78, sides, len * 0.28,
-            c1, c2,
-            [0.4, 0.04 * (i % 4), i * 0.5, 0.85],
-            [1.8, 0.06 * (i % 4), i * 0.5, 0.95]
-          );
-        }
-
-        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Geode`;
-        return { mesh: mb.finalize(false), name, animMode: 3, sss: 0.45, accent: hslToRgb(hue, 1, 0.65) };
-      },
-
-      spaceship(rng) {
-        const mb = new MeshBuilder();
-        const hullHue = rng();
-        const engineHue = (hullHue + 0.5) % 1;
-        const hullCol = hslToRgb(hullHue, 0.2, 0.58);
-        const darkCol = hslToRgb(hullHue, 0.18, 0.22);
-        const accentCol = hslToRgb(engineHue, 0.88, 0.52);
-        const glowCol = hslToRgb(engineHue, 1.0, 0.78);
-
-        const hullMeta = [0.0, 0.05, 0.0, 0.9];
-        const darkMeta = [0.0, 0.05, 0.0, 0.7];
-        const glowMeta = [2.6, 0.05, 1.0, 0.2];
-
-        const segs = 16;
         const rings = [];
-        for (let i = 0; i < segs; i++) {
-          const t = i / (segs - 1);
-          const z = (0.5 - t) * 3.0;
-          const w = 0.12 + 0.36 * Math.sin(Math.pow(t, 0.65) * Math.PI);
-          const h = 0.08 + 0.22 * Math.sin(t * Math.PI);
+        for (let i = 0; i < bellRings; i++) {
+          const t = i / (bellRings - 1);
+          const phi = t * Math.PI * 0.58;
+          const rBase = Math.sin(phi) * bellRadius;
+          const yBase = Math.cos(phi) * bellHeight;
           const ring = [];
-          for (let j = 0; j < 10; j++) {
-            const a = (j / 10) * Math.PI * 2 + Math.PI / 10;
-            ring.push([Math.cos(a) * w, Math.sin(a) * h, z]);
+          for (let j = 0; j < bellSegs; j++) {
+            const ang = (j / bellSegs) * Math.PI * 2;
+            const ribWave = 1 + 0.05 * Math.sin(ang * ribs) * Math.sin(t * Math.PI);
+            ring.push([Math.cos(ang) * rBase * ribWave, yBase, Math.sin(ang) * rBase * ribWave]);
           }
           rings.push(ring);
         }
         mb.addLoft(
           rings,
-          (t) => (t > 0.2 && t < 0.42 ? accentCol : hullCol),
-          () => hullMeta,
-          true, true
+          (t) => v3.lerp(pal.bell, pal.glow, t * 0.5),
+          (t) => [0.22 + 0.45 * Math.pow(t, 2), 0.25 + 0.65 * t, t * 1.5, 0.12],
+          true, false
         );
 
-        mb.addBox([0, 0.2, 0.35], [0.28, 0.16, 0.75], 0, glowCol, [1.2, 0.05, 0, 0.95]);
-
-        const wingSpan = 1.3 + rng() * 0.9;
-        const wingSweep = 0.4 + rng() * 0.5;
-        for (const side of [-1, 1]) {
-          const p1 = [side * 0.25, 0.04, 0.3];
-          const p2 = [side * wingSpan, -0.05, -wingSweep];
-          const p3 = [side * wingSpan, -0.05, -wingSweep - 0.55];
-          const p4 = [side * 0.25, 0.04, -0.85];
-          const thick = [0, -0.08, 0];
-          mb.addQuad(p1, p2, p3, p4, hullCol, accentCol, accentCol, hullCol, hullMeta, hullMeta, hullMeta, hullMeta);
-          mb.addQuad(
-            v3.add(p4, thick), v3.add(p3, thick), v3.add(p2, thick), v3.add(p1, thick),
-            darkCol, darkCol, darkCol, darkCol, darkMeta, darkMeta, darkMeta, darkMeta
-          );
-          mb.addBox([side * wingSpan, 0.02, -wingSweep - 0.2], [0.08, 0.12, 0.7], 0, darkCol, darkMeta);
-        }
-
-        const nEngines = rng() > 0.5 ? 2 : 4;
-        for (let e = 0; e < nEngines; e++) {
-          const side = e % 2 === 0 ? -1 : 1;
-          const row = Math.floor(e / 2);
-          const ex = side * (0.38 + row * 0.32);
-          const ey = row === 0 ? 0.05 : -0.14;
-          mb.addPrism([ex, ey, -1.1], [0, 0, 1], 0.9, 0.14, 0.16, 10, 0.05, darkCol, hullCol, darkMeta, hullMeta);
-          mb.addPrism([ex, ey, -1.12], [0, 0, -1], 0.24, 0.11, 0.02, 10, 0.08, glowCol, glowCol, glowMeta, glowMeta);
-        }
-
-        mb.addBox([0, 0.34, -0.8], [0.06, 0.42, 0.75], 0, accentCol, hullMeta);
-
-        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Interceptor`;
-        return { mesh: mb.finalize(false), name, animMode: 3, sss: 0.0, accent: glowCol };
-      },
-
-      relic(rng) {
-        const mb = new MeshBuilder();
-        const hue = rng();
-        const hue2 = (hue + 0.5) % 1;
-        const p = 2 + Math.floor(rng() * 3);
-        const q = 3 + Math.floor(rng() * 5);
-        const steps = 160;
-        const pts = [], radii = [];
-        for (let i = 0; i <= steps; i++) {
-          const t = (i / steps) * Math.PI * 2;
-          const r = 1.0 + 0.38 * Math.cos(q * t);
-          pts.push([
-            r * Math.cos(p * t),
-            0.42 * Math.sin(q * t),
-            r * Math.sin(p * t),
-          ]);
-          radii.push(0.11 + 0.04 * Math.sin(q * t * 2));
-        }
-        mb.addTube(
-          pts, radii, 14,
-          (t) => hslToRgb(hue + t * 0.15, 0.7, 0.48),
-          (t) => [Math.sin(t * Math.PI * 16) > 0.65 ? 1.85 : 0.1, 0.05, t * 6.0, 0.92],
-          false, false
-        );
-
-        mb.addPrism([0, -0.35, 0], [0, 1, 0], 0.35, 0.28, 0.28, 8, 0.3,
-          hslToRgb(hue2, 0.95, 0.6), hslToRgb(hue2, 1.0, 0.8),
-          [2.0, 0.2, 0, 0.6], [2.5, 0.2, 1, 0.6]
-        );
-        mb.addPrism([0, -0.35, 0], [0, -1, 0], 0.01, 0.28, 0.28, 8, 0.3,
-          hslToRgb(hue2, 0.95, 0.6), hslToRgb(hue2, 1.0, 0.8),
-          [2.0, 0.2, 0, 0.6], [2.5, 0.2, 1, 0.6]
-        );
-
-        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Toroid (${p}:${q})`;
-        return { mesh: mb.finalize(true), name, animMode: 3, sss: 0.15, accent: hslToRgb(hue2, 1, 0.65) };
-      },
-
-      architecture(rng) {
-        const mb = new MeshBuilder();
-        const hue = rng();
-        const glowHue = (hue + 0.12) % 1;
-        const baseCol = hslToRgb(hue, 0.16, 0.42);
-        const trimCol = hslToRgb(hue, 0.3, 0.62);
-        const glowCol = hslToRgb(glowHue, 0.95, 0.72);
-        const tiers = 4 + Math.floor(rng() * 4);
-        const sides = [4, 6, 8][Math.floor(rng() * 3)];
-
-        let y = -1.3;
-        let rad = 1.05;
-        for (let t = 0; t < tiers; t++) {
-          const h = 0.45 + rng() * 0.45;
-          mb.addPrism(
-            [0, y, 0], [0, 1, 0], h, rad, rad * 0.86, sides, t === tiers - 1 ? 0.65 : 0.05,
-            baseCol, trimCol, [0, 0, 0, 0.55], [0.1, 0, 0, 0.65]
-          );
-          mb.addPrism(
-            [0, y + h * 0.75, 0], [0, 1, 0], 0.08, rad * 0.92, rad * 0.92, sides, 0,
-            glowCol, glowCol, [2.1, 0, t, 0.2], [2.1, 0, t, 0.2]
-          );
-          if (t < tiers - 1) {
-            for (let s = 0; s < sides; s++) {
-              const a = (s / sides) * Math.PI * 2;
-              const bx = Math.cos(a) * rad * 0.95;
-              const bz = Math.sin(a) * rad * 0.95;
-              mb.addPrism(
-                [bx, y, bz], [0, 1, 0], h * 0.9, 0.12, 0.06, 4, 0.15,
-                trimCol, glowCol, [0.1, 0, 0, 0.6], [1.4, 0, s, 0.3]
-              );
-            }
+        // 4 Oral Arms
+        for (let a = 0; a < 4; a++) {
+          const baseAng = (a / 4) * Math.PI * 2;
+          const pts = [], radii = [];
+          for (let s = 0; s < 18; s++) {
+            const st = s / 17;
+            const ang = baseAng + st * 2.0;
+            const r = 0.16 * Math.sin(st * Math.PI) + 0.05;
+            pts.push([Math.cos(ang) * r, 0.1 - st * 1.45, Math.sin(ang) * r]);
+            radii.push(0.058 * (1 - st * 0.7) * (1 + 0.3 * Math.sin(st * 16)));
           }
-          y += h;
-          rad *= 0.74;
+          mb.addTube(pts, radii, 7, () => pal.glow, (t) => [0.4 + t * 0.45, 0.35 + t * 0.75, a + t * 2.5, 0.1]);
         }
 
-        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Citadel`;
-        return { mesh: mb.finalize(false), name, animMode: 0, sss: 0.0, accent: glowCol };
+        // Fine Trailing Tentacles
+        const nTentacles = 14 + Math.floor(rng() * 8);
+        for (let k = 0; k < nTentacles; k++) {
+          const ang = (k / nTentacles) * Math.PI * 2 + (rng() - 0.5) * 0.15;
+          const rad = bellRadius * (0.48 + 0.44 * rng());
+          const len = 1.65 + rng() * 1.3;
+          const pts = [], radii = [];
+          for (let s = 0; s < 18; s++) {
+            const st = s / 17;
+            const r = rad * (1 - st * 0.18) + Math.sin(st * 5.5 + k) * 0.06;
+            pts.push([Math.cos(ang) * r, 0.1 - st * len, Math.sin(ang) * r]);
+            radii.push((1 - st * 0.85) * 0.024);
+          }
+          mb.addTube(pts, radii, 5, () => pal.bell, (t) => [0.28 + t * 0.4, 0.3 + t * 0.9, k * 0.7 + t * 2.5, 0.08]);
+        }
+
+        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Moon Jelly`;
+        return { mesh: mb.finalize(true), name, animMode: 6, sss: 0.9, accent: pal.glow };
       },
 
-      serpent(rng) {
+      seahorse(rng) {
         const mb = new MeshBuilder();
-        const hue = rng();
-        const glowHue = (hue + 0.42) % 1;
-        const steps = 48;
-        const pts = [], rads = [];
-        const len = 3.2 + rng() * 0.8;
+        const hue = 0.07 + rng() * 0.09; // Warm golden-ochre to coral-orange
+        const bodyCol = hslToRgb(hue, 0.72, 0.5);
+        const ridgeCol = hslToRgb(hue + 0.04, 0.6, 0.65);
 
+        // S-curved body + coiled prehensile tail
+        const pts = [], rads = [];
+        const steps = 42;
         for (let i = 0; i < steps; i++) {
           const t = i / (steps - 1);
-          const z = (0.5 - t) * len;
-          const x = Math.sin(t * Math.PI * 2.5) * 0.28;
-          const y = Math.cos(t * Math.PI * 2.0) * 0.14;
-          pts.push([x, y, z]);
-          const bodyEnv = Math.sin(Math.pow(t, 0.55) * Math.PI);
-          rads.push(0.03 + 0.2 * bodyEnv + (t < 0.14 ? 0.06 : 0));
-        }
-
-        mb.addTube(
-          pts, rads, 14,
-          (t, u) => {
-            const band = Math.sin(t * Math.PI * 14) > 0.45 ? 0.18 : 0;
-            return hslToRgb(hue + band, 0.78, 0.34 + 0.22 * (1 - t));
-          },
-          (t, u) => [Math.sin(t * Math.PI * 14) > 0.65 ? 1.5 : 0.12, 0.65 + 0.35 * t, t * 5.0, 0.25]
-        );
-
-        // Dorsal fin crest along the back
-        const finPts = [], finRads = [];
-        for (let i = 2; i < steps - 4; i++) {
-          const t = i / (steps - 1);
-          const p = pts[i];
-          finPts.push([p[0], p[1] + rads[i] * 1.15 + 0.08 * Math.sin(t * Math.PI), p[2]]);
-          finRads.push(0.025 + 0.04 * Math.sin(t * Math.PI));
+          if (t < 0.62) {
+            const u = t / 0.62;
+            const z = Math.sin(u * Math.PI * 1.45) * 0.24;
+            const y = 0.95 - u * 1.55;
+            const belly = u > 0.28 ? Math.sin(((u - 0.28) / 0.72) * Math.PI) * 0.24 : 0.12;
+            const ridge = 1 + 0.12 * Math.sin(u * Math.PI * 22);
+            pts.push([0, y, z]);
+            rads.push((0.08 + belly) * ridge);
+          } else {
+            const u = (t - 0.62) / 0.38;
+            const spiralAng = u * Math.PI * 2.4;
+            const spiralR = 0.26 * (1 - u * 0.68);
+            pts.push([0, -0.6 - Math.sin(spiralAng) * spiralR - u * 0.35, -0.15 + Math.cos(spiralAng) * spiralR]);
+            rads.push(0.085 * (1 - u * 0.78));
+          }
         }
         mb.addTube(
-          finPts, finRads, 6,
-          (t) => hslToRgb(glowHue, 0.95, 0.62),
-          (t) => [1.4, 0.75, t * 5.0, 0.1]
+          pts, rads, 12,
+          (t) => (Math.sin(t * Math.PI * 36) > 0.4 ? ridgeCol : bodyCol),
+          (t) => [0.0, 0.15 + 0.45 * t, t * 2.0, 0.22]
         );
 
-        // Glowing whisker barbels at head
-        const head = pts[1];
+        // Tubular Snout & Coronet Crest
+        mb.addTube(
+          [[0, 0.95, 0.08], [0, 0.92, 0.34], [0, 0.9, 0.56]],
+          [0.14, 0.065, 0.045], 10,
+          () => bodyCol, () => [0, 0.1, 0, 0.2]
+        );
+        mb.addPrism([0, 1.05, 0.02], [0, 0.9, -0.4], 0.16, 0.1, 0.05, 6, 0.06, bodyCol, ridgeCol, [0, 0.1, 0, 0.2], [0, 0.1, 0, 0.2]);
         for (const side of [-1, 1]) {
-          const wPts = [], wRads = [];
-          for (let s = 0; s < 10; s++) {
-            const st = s / 9;
-            wPts.push([
-              head[0] + side * (0.12 + st * 0.45),
-              head[1] - st * 0.22 + Math.sin(st * 4) * 0.06,
-              head[2] + 0.15 - st * 0.55,
-            ]);
-            wRads.push(0.028 * (1 - st * 0.8));
-          }
-          mb.addTube(wPts, wRads, 6, () => hslToRgb(glowHue, 1, 0.7), (t) => [1.8, 0.9, t * 3, 0.1]);
+          mb.addEllipsoid([side * 0.11, 0.98, 0.14], 0.036, 0.036, 0.036, 8, 6, () => [0.03, 0.03, 0.04], () => [0, 0.1, 0, 0.95]);
         }
 
-        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Leviathan`;
-        return { mesh: mb.finalize(true), name, animMode: 4, sss: 0.6, accent: hslToRgb(glowHue, 1, 0.65) };
-      },
+        // Delicate Dorsal Fin
+        mb.addLeafBlade(
+          [[0, 0.35, -0.22], [0, 0.12, -0.3], [0, -0.12, -0.25]],
+          [0.05, 0.15, 0.05], [1, 0, 0],
+          () => [0.95, 0.85, 0.58], (t) => [0.1, 0.55, t * 4.0, 0.1], 0.02
+        );
 
-      butterfly(rng) {
-        const mb = new MeshBuilder();
-        const hue = rng();
-        const glowHue = (hue + 0.35 + rng() * 0.2) % 1;
-        const bodyCol = hslToRgb(hue, 0.45, 0.28);
-        const wingCol = hslToRgb(hue, 0.88, 0.52);
-        const glowCol = hslToRgb(glowHue, 1.0, 0.68);
-
-        // Slender segmented body
-        const bPts = [], bRads = [];
-        for (let i = 0; i < 14; i++) {
-          const t = i / 13;
-          bPts.push([0, Math.sin(t * Math.PI) * 0.06, (0.5 - t) * 1.4]);
-          bRads.push(0.04 + 0.075 * Math.sin(t * Math.PI));
-        }
-        mb.addTube(bPts, bRads, 10, () => bodyCol, () => [0.2, 0.05, 0, 0.3]);
-
-        // Feathered antennae
-        for (const side of [-1, 1]) {
-          const aPts = [], aRads = [];
-          for (let s = 0; s < 8; s++) {
-            const st = s / 7;
-            aPts.push([side * (0.04 + st * 0.32), 0.06 + st * 0.36, 0.68 + st * 0.35]);
-            aRads.push(0.018 * (1 - st * 0.65));
-          }
-          mb.addTube(aPts, aRads, 5, () => glowCol, () => [1.5, 0.2, side, 0.1]);
-        }
-
-        // Upper & Lower sculpted wings (symmetrical)
-        const wingSpan = 1.35 + rng() * 0.45;
-        for (const side of [-1, 1]) {
-          const segs = 18;
-          const rings = [];
-          for (let i = 0; i < segs; i++) {
-            const t = i / (segs - 1);
-            const x = side * (0.06 + t * wingSpan);
-            const zFront = 0.42 + Math.sin(t * Math.PI * 0.85) * 0.55;
-            const zBack = -0.75 - Math.sin(t * Math.PI) * 0.45;
-            const arch = Math.sin(t * Math.PI) * 0.16;
-            const ring = [];
-            const chordSegs = 8;
-            for (let j = 0; j < chordSegs; j++) {
-              const u = j / (chordSegs - 1);
-              const z = zFront + (zBack - zFront) * u;
-              const y = arch + Math.sin(u * Math.PI) * 0.04;
-              ring.push([x, y, z]);
-            }
-            rings.push(ring);
-          }
-          mb.addLoft(
-            rings,
-            (t, u) => {
-              const spot = Math.hypot(t - 0.62, u - 0.35) < 0.2 ? 1 : 0;
-              return spot ? glowCol : hslToRgb(hue + t * 0.16, 0.9, 0.48 + 0.15 * u);
-            },
-            (t, u) => {
-              const vein = Math.sin(u * Math.PI * 6) > 0.78 || t > 0.88 ? 1.55 : 0.25;
-              return [vein, 0.95, side * 0.2, 0.15];
-            },
-            false, false
-          );
-        }
-
-        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Seraph`;
-        return { mesh: mb.finalize(true), name, animMode: 5, sss: 0.85, accent: glowCol };
+        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Seahorse`;
+        return { mesh: mb.finalize(true), name, animMode: 1, sss: 0.45, accent: ridgeCol };
       },
 
       squid(rng) {
         const mb = new MeshBuilder();
-        const hue = rng();
-        const glowHue = (hue + 0.28 + rng() * 0.25) % 1;
+        const hue = rng() > 0.5 ? 0.94 : 0.54; // Soft coral-rose or pearlescent reef-cyan
+        const baseCol = hslToRgb(hue, 0.45, 0.65);
+        const finCol = hslToRgb(hue, 0.62, 0.52);
 
-        // Torpedo mantle
         const mRings = [];
         const mSegs = 24, rSegs = 24;
         for (let i = 0; i < mSegs; i++) {
           const t = i / (mSegs - 1);
-          const y = 1.25 - t * 1.65;
-          const r = 0.04 + 0.42 * Math.sin(Math.pow(t, 0.65) * Math.PI);
+          const y = 1.2 - t * 1.55;
+          const r = 0.04 + 0.38 * Math.sin(Math.pow(t, 0.65) * Math.PI);
           const ring = [];
           for (let j = 0; j < rSegs; j++) {
             const a = (j / rSegs) * Math.PI * 2;
-            const fin = t < 0.42 ? 1 + 0.75 * Math.sin((t / 0.42) * Math.PI) * Math.pow(Math.abs(Math.cos(a)), 6) : 1;
+            const fin = t < 0.42 ? 1 + 0.72 * Math.sin((t / 0.42) * Math.PI) * Math.pow(Math.abs(Math.cos(a)), 6) : 1;
             ring.push([Math.cos(a) * r * fin, y, Math.sin(a) * r]);
           }
           mRings.push(ring);
         }
         mb.addLoft(
           mRings,
-          (t, u) => hslToRgb(hue + t * 0.1, 0.82, 0.42 + 0.18 * Math.sin(u * Math.PI * 4)),
-          (t, u) => [Math.sin(u * Math.PI * 8) > 0.8 ? 1.5 : 0.25, 0.25 * (1 - t), t * 2.0, 0.18],
+          (t) => v3.lerp(finCol, baseCol, 0.3 + 0.5 * t),
+          (t) => [0.1, 0.25 * (1 - t), t * 2.0, 0.25],
           true, false
         );
 
-        // 10 flowing tentacles + 2 long feeding arms
-        const nArms = 12;
+        // Eyes
+        for (const side of [-1, 1]) {
+          mb.addEllipsoid([side * 0.26, -0.32, 0.12], 0.075, 0.085, 0.075, 10, 8, () => [0.04, 0.04, 0.06], () => [0, 0.1, 0, 0.95]);
+        }
+
+        // 10 Tentacles
+        const nArms = 10;
         for (let k = 0; k < nArms; k++) {
-          const isLong = k === 0 || k === 6;
+          const isLong = k === 0 || k === 5;
           const ang = (k / nArms) * Math.PI * 2;
-          const rad = 0.24;
-          const armLen = isLong ? 2.1 : 1.35 + rng() * 0.35;
+          const rad = 0.22;
+          const armLen = isLong ? 1.85 : 1.2 + rng() * 0.3;
           const pts = [], rads = [];
-          for (let s = 0; s < 18; s++) {
-            const st = s / 17;
-            const r = rad * (1 + st * 0.6) + Math.sin(st * 5 + k) * 0.09;
-            pts.push([Math.cos(ang + st * 0.4) * r, -0.35 - st * armLen, Math.sin(ang + st * 0.4) * r]);
-            rads.push((isLong ? 0.048 : 0.036) * (1 - st * 0.85));
+          for (let s = 0; s < 16; s++) {
+            const st = s / 15;
+            const r = rad * (1 + st * 0.45) + Math.sin(st * 4.5 + k) * 0.07;
+            pts.push([Math.cos(ang + st * 0.3) * r, -0.35 - st * armLen, Math.sin(ang + st * 0.3) * r]);
+            rads.push((isLong ? 0.042 : 0.032) * (1 - st * 0.85));
           }
-          mb.addTube(
-            pts, rads, 7,
-            (t) => hslToRgb(glowHue + t * 0.12, 0.92, 0.56),
-            (t) => [0.6 + t * 1.35, 0.35 + t * 0.85, k * 0.6 + t * 3.0, 0.1]
-          );
+          mb.addTube(pts, rads, 6, () => finCol, (t) => [0.12, 0.3 + t * 0.85, k * 0.6 + t * 2.5, 0.15]);
         }
 
-        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Kraken`;
-        return { mesh: mb.finalize(true), name, animMode: 1, sss: 0.78, accent: hslToRgb(glowHue, 1, 0.62) };
+        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Reef Squid`;
+        return { mesh: mb.finalize(true), name, animMode: 1, sss: 0.65, accent: baseCol };
       },
 
-      shell(rng) {
+      vallisneria(rng) {
         const mb = new MeshBuilder();
-        const hue = rng();
-        const glowHue = (hue + 0.35) % 1;
-        const steps = 95;
-        const ringSegs = 24;
-        const turns = 2.2 + rng() * 1.1;
-        const growth = 0.24 + rng() * 0.06;
-        const ribs = 16 + Math.floor(rng() * 16);
+        const hue = 0.27 + rng() * 0.09; // Lush aquatic green
+        const nBlades = 13 + Math.floor(rng() * 7);
 
-        const rings = [];
-        for (let i = 0; i < steps; i++) {
-          const t = i / (steps - 1);
-          const theta = t * Math.PI * 2 * turns;
-          const rSpiral = 0.08 * Math.exp(growth * theta);
-          const tubeR = rSpiral * 0.52;
-          const cx = Math.cos(theta) * rSpiral;
-          const cy = Math.sin(theta) * rSpiral;
-          const cz = (t - 0.6) * 0.15;
-
-          const dirX = Math.cos(theta), dirY = Math.sin(theta);
-          const ribMod = 1 + 0.09 * Math.sin(theta * ribs);
-          const ring = [];
-          for (let j = 0; j < ringSegs; j++) {
-            const phi = (j / ringSegs) * Math.PI * 2;
-            const localR = tubeR * ribMod * (0.85 + 0.15 * Math.cos(phi));
-            ring.push([
-              cx + dirX * Math.cos(phi) * localR,
-              cy + dirY * Math.cos(phi) * localR,
-              cz + Math.sin(phi) * localR,
-            ]);
-          }
-          rings.push(ring);
-        }
-        mb.addLoft(
-          rings,
-          (t, u) => hslToRgb(hue + t * 0.18, 0.65, 0.45 + 0.2 * Math.sin(u * Math.PI * 4)),
-          (t, u) => [t > 0.9 ? 0.6 : 0.05, 0.05, t * 4.0, 0.45],
-          true, true
-        );
-
-        // Glowing tentacles emerging from aperture
-        const lastTheta = Math.PI * 2 * turns;
-        const lastR = 0.08 * Math.exp(growth * lastTheta);
-        const mouth = [Math.cos(lastTheta) * lastR, Math.sin(lastTheta) * lastR, 0.06];
-        for (let k = 0; k < 6; k++) {
-          const pts = [], rads = [];
-          for (let s = 0; s < 14; s++) {
-            const st = s / 13;
-            const spread = (k - 2.5) * 0.18;
+        for (let b = 0; b < nBlades; b++) {
+          const ang = (b / nBlades) * Math.PI * 2 + (rng() - 0.5) * 0.3;
+          const spreadR = 0.06 + rng() * 0.18;
+          const h = 1.65 + rng() * 1.25;
+          const lean = 0.32 + rng() * 0.45;
+          const wBase = 0.065 + rng() * 0.03;
+          const steps = 12;
+          const pts = [], widths = [];
+          for (let s = 0; s < steps; s++) {
+            const st = s / (steps - 1);
+            const curve = Math.pow(st, 1.5) * lean;
+            const twist = Math.sin(st * Math.PI * 2 + b) * 0.06;
             pts.push([
-              mouth[0] + Math.cos(lastTheta + 1.2 + spread) * st * 0.9,
-              mouth[1] + Math.sin(lastTheta + 1.2 + spread) * st * 0.9 - st * 0.3,
-              mouth[2] + Math.sin(st * 5 + k) * 0.2,
+              Math.cos(ang) * (spreadR + curve) + Math.sin(ang) * twist,
+              st * h,
+              Math.sin(ang) * (spreadR + curve) - Math.cos(ang) * twist,
             ]);
-            rads.push(0.055 * (1 - st * 0.85));
+            widths.push(wBase * Math.sin(Math.pow(st, 0.35) * Math.PI * 0.92 + 0.12));
           }
-          mb.addTube(
-            pts, rads, 7,
-            (t) => hslToRgb(glowHue, 0.95, 0.6),
-            (t) => [0.8 + t * 1.4, 0.65, k + t * 2.0, 0.1]
+          mb.addLeafBlade(
+            pts, widths, [Math.cos(ang), 0, Math.sin(ang)],
+            (t) => hslToRgb(hue + t * 0.04, 0.62 + t * 0.12, 0.22 + t * 0.24),
+            (t) => [0.0, t, b * 0.65, 0.08], 0.1
           );
         }
 
-        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Nautilus`;
-        return { mesh: mb.finalize(true), name, animMode: 1, sss: 0.45, accent: hslToRgb(glowHue, 1, 0.6) };
+        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Vallisneria`;
+        return { mesh: mb.finalize(true, true), name, animMode: 7, sss: 0.78, accent: [0.25, 0.78, 0.42] };
       },
 
-      station(rng) {
+      stem_plant(rng) {
         const mb = new MeshBuilder();
-        const hue = rng();
-        const coreHue = (hue + 0.5) % 1;
-        const metalCol = hslToRgb(hue, 0.18, 0.55);
-        const darkCol = hslToRgb(hue, 0.15, 0.25);
-        const glowCol = hslToRgb(coreHue, 1.0, 0.72);
+        const isReddish = rng() > 0.58; // Green Anacharis/Rotala vs Reddish Ludwigia
+        const stemHue = isReddish ? 0.12 : 0.28;
+        const leafHue = isReddish ? 0.04 : 0.31;
+        const nStems = 3 + Math.floor(rng() * 4);
 
-        const nRings = 2 + Math.floor(rng() * 2);
-        for (let rIdx = 0; rIdx < nRings; rIdx++) {
-          const R = 0.95 + rIdx * 0.42;
-          const tiltX = (rng() - 0.5) * 1.4;
-          const tiltZ = (rng() - 0.5) * 1.4;
-          const cx = Math.cos(tiltX), sx = Math.sin(tiltX);
-          const cz = Math.cos(tiltZ), sz = Math.sin(tiltZ);
-          const segs = 64;
+        for (let s = 0; s < nStems; s++) {
+          const ang = (s / nStems) * Math.PI * 2 + rng() * 0.5;
+          const baseR = 0.12 + rng() * 0.22;
+          const height = 1.6 + rng() * 1.1;
+          const leanX = Math.cos(ang) * (0.25 + rng() * 0.35);
+          const leanZ = Math.sin(ang) * (0.25 + rng() * 0.35);
           const pts = [], rads = [];
-          for (let i = 0; i <= segs; i++) {
-            const a = (i / segs) * Math.PI * 2;
-            let x = Math.cos(a) * R, y = 0, z = Math.sin(a) * R;
-            // Rotate X then Z
-            const y1 = y * cx - z * sx, z1 = y * sx + z * cx;
-            const x2 = x * cz - y1 * sz, y2 = x * sz + y1 * cz;
-            pts.push([x2, y2, z1]);
-            rads.push(0.055 + (i % 8 === 0 ? 0.035 : 0));
+          const nodes = 10;
+          for (let i = 0; i < nodes; i++) {
+            const st = i / (nodes - 1);
+            pts.push([
+              Math.cos(ang) * baseR + leanX * Math.pow(st, 1.3),
+              st * height,
+              Math.sin(ang) * baseR + leanZ * Math.pow(st, 1.3),
+            ]);
+            rads.push(0.032 * (1 - st * 0.45));
+          }
+          mb.addTube(
+            pts, rads, 6,
+            (t) => hslToRgb(stemHue, 0.5, 0.25 + t * 0.12),
+            (t) => [0, t, s * 0.9, 0.05]
+          );
+
+          // Leaf whorls at nodes
+          for (let i = 2; i < nodes; i++) {
+            const st = i / (nodes - 1);
+            const p = pts[i];
+            const nLeaves = 4 + (i % 2);
+            const leafSize = 0.28 + 0.14 * Math.sin(st * Math.PI);
+            for (let l = 0; l < nLeaves; l++) {
+              const la = (l / nLeaves) * Math.PI * 2 + i * 0.6;
+              const lPts = [
+                p,
+                [p[0] + Math.cos(la) * leafSize * 0.55, p[1] + 0.05, p[2] + Math.sin(la) * leafSize * 0.55],
+                [p[0] + Math.cos(la) * leafSize, p[1] + 0.02, p[2] + Math.sin(la) * leafSize],
+              ];
+              mb.addLeafBlade(
+                lPts, [0.025, 0.08, 0.015], [0, 1, 0],
+                (lt) => {
+                  const h = isReddish ? leafHue - st * 0.03 : leafHue + lt * 0.03;
+                  return hslToRgb(h, 0.62 + st * 0.15, 0.26 + st * 0.18 + lt * 0.08);
+                },
+                () => [0, st, s * 0.9, 0.08], 0.12
+              );
+            }
+          }
+        }
+
+        const name = isReddish
+          ? `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Ludwigia`
+          : `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Rotala`;
+        return { mesh: mb.finalize(true, true), name, animMode: 7, sss: 0.72, accent: isReddish ? [0.85, 0.42, 0.28] : [0.3, 0.82, 0.45] };
+      },
+
+      broadleaf_coral(rng) {
+        const mb = new MeshBuilder();
+        const isAnubias = rng() > 0.45;
+        if (isAnubias) {
+          // Rosette of broad glossy Anubias / Amazon Sword leaves
+          const hue = 0.32 + rng() * 0.07;
+          const nLeaves = 9 + Math.floor(rng() * 5);
+          for (let l = 0; l < nLeaves; l++) {
+            const ang = (l / nLeaves) * Math.PI * 2 + (rng() - 0.5) * 0.35;
+            const len = 0.75 + rng() * 0.55;
+            const elev = 0.45 + rng() * 0.55;
+            const lPts = [
+              [0, 0.05, 0],
+              [Math.cos(ang) * len * 0.35, elev * 0.65, Math.sin(ang) * len * 0.35],
+              [Math.cos(ang) * len * 0.75, elev * 0.95, Math.sin(ang) * len * 0.75],
+              [Math.cos(ang) * len * 1.1, elev * 0.72, Math.sin(ang) * len * 1.1],
+            ];
+            mb.addLeafBlade(
+              lPts, [0.03, 0.18, 0.24, 0.03], [0, 1, 0],
+              (t) => hslToRgb(hue, 0.65, 0.18 + t * 0.18),
+              (t) => [0, t * 0.6, l * 0.5, 0.25], 0.12
+            );
+          }
+          const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Anubias`;
+          return { mesh: mb.finalize(true, true), name, animMode: 7, sss: 0.65, accent: [0.22, 0.75, 0.45] };
+        }
+
+        // Natural Soft Reef Coral / Sea Anemone
+        const coralHue = [0.02, 0.07, 0.95, 0.46][Math.floor(rng() * 4)];
+        const coralPhase = rng() * Math.PI * 2;
+        const maxDepth = 3;
+        function growCoral(pos, dir, len, rad, depth) {
+          const steps = 6;
+          const pts = [], rads = [];
+          let cur = pos, curDir = v3.norm(dir);
+          for (let i = 0; i < steps; i++) {
+            const t = i / (steps - 1);
+            pts.push(cur);
+            rads.push(rad * (1 - t * 0.35));
+            curDir = v3.norm(v3.add(curDir, [(rng() - 0.5) * 0.18, 0.18, (rng() - 0.5) * 0.18]));
+            cur = v3.add(cur, v3.mul(curDir, len / (steps - 1)));
           }
           mb.addTube(
             pts, rads, 8,
-            (t) => (Math.floor(t * 24) % 4 === 0 ? glowCol : metalCol),
-            (t) => [Math.floor(t * 24) % 4 === 0 ? 1.8 : 0.05, 0.04, rIdx, 0.9],
-            false, false
+            (t) => hslToRgb(coralHue + t * 0.03, 0.62, 0.38 + depth * 0.08 + t * 0.08),
+            (t) => [depth === maxDepth ? 0.18 : 0.0, 0.18 * (depth + t), coralPhase, 0.1]
           );
-        }
-
-        // Central Dyson / Fusion Core + Spire
-        mb.addPrism([0, -0.7, 0], [0, 1, 0], 1.4, 0.1, 0.1, 8, 0.35, darkCol, metalCol, [0, 0, 0, 0.8], [0.2, 0, 0, 0.9]);
-        mb.addPrism([0, -0.25, 0], [0, 1, 0], 0.5, 0.34, 0.34, 12, 0.25, glowCol, glowCol, [2.6, 0.1, 0, 0.3], [2.6, 0.1, 0, 0.3]);
-
-        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Dyson Gate`;
-        return { mesh: mb.finalize(false), name, animMode: 3, sss: 0.0, accent: glowCol };
-      },
-
-      island(rng) {
-        const mb = new MeshBuilder();
-        const rockHue = 0.06 + rng() * 0.08;
-        const floraHue = 0.28 + rng() * 0.16;
-        const waterHue = 0.52 + rng() * 0.1;
-        const rockDark = hslToRgb(rockHue, 0.22, 0.22);
-        const rockLight = hslToRgb(rockHue, 0.2, 0.38);
-        const grassCol = hslToRgb(floraHue, 0.55, 0.4);
-        const glowWater = hslToRgb(waterHue, 0.95, 0.65);
-
-        // Jagged inverted rocky underside
-        mb.addPrism([0, 0.25, 0], [0, -1, 0], 1.35, 1.25, 0.18, 7, 0.45, rockLight, rockDark, [0, 0, 0, 0.2], [0, 0, 0, 0.2]);
-        for (let i = 0; i < 6; i++) {
-          const a = (i / 6) * Math.PI * 2 + rng() * 0.4;
-          const dist = 0.55 + rng() * 0.35;
-          mb.addPrism(
-            [Math.cos(a) * dist, 0.15, Math.sin(a) * dist],
-            [Math.cos(a) * 0.15, -1, Math.sin(a) * 0.15],
-            0.7 + rng() * 0.5, 0.42, 0.08, 5, 0.3,
-            rockLight, rockDark, [0, 0, 0, 0.2], [0, 0, 0, 0.2]
-          );
-        }
-
-        // Lush top plateau
-        mb.addPrism([0, 0.22, 0], [0, 1, 0], 0.18, 1.32, 1.22, 9, 0.05, rockLight, grassCol, [0, 0, 0, 0.15], [0, 0, 0, 0.1]);
-
-        // Glowing obelisk & floating waterfall stream
-        mb.addPrism([0, 0.4, 0], [0, 1, 0], 0.95, 0.18, 0.08, 4, 0.22, rockLight, glowWater, [0.1, 0, 0, 0.4], [2.2, 0.1, 0, 0.5]);
-        mb.addBox([0.65, -0.35, 0], [0.16, 1.4, 0.08], 0, glowWater, [1.8, 0.25, 1, 0.2]);
-
-        // Mini trees on top
-        for (let t = 0; t < 4; t++) {
-          const a = (t / 4) * Math.PI * 2 + 0.5;
-          const tx = Math.cos(a) * 0.65, tz = Math.sin(a) * 0.65;
-          mb.addPrism([tx, 0.4, tz], [0, 1, 0], 0.35, 0.05, 0.03, 5, 0, rockDark, rockDark, [0, 0, 0, 0.1], [0, 0, 0, 0.1]);
-          mb.addPrism([tx, 0.68, tz], [0, 1, 0], 0.38, 0.26, 0.06, 6, 0.15, grassCol, hslToRgb(floraHue, 0.7, 0.55), [0.1, 0.2, t, 0.1], [0.4, 0.2, t, 0.1]);
-        }
-
-        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Sky Isle`;
-        return { mesh: mb.finalize(false), name, animMode: 3, sss: 0.15, accent: glowWater };
-      },
-
-      fractal(rng) {
-        const mb = new MeshBuilder();
-        const hue = rng();
-        const glowHue = (hue + 0.42) % 1;
-        const strutCol = hslToRgb(hue, 0.35, 0.58);
-        const nodeCol = hslToRgb(glowHue, 1.0, 0.72);
-
-        function subOct(center, size, depth) {
-          if (depth === 0) {
-            mb.addBox(center, [size, size, size], depth * 0.3, strutCol, [0.08, 0.05, 0, 0.9]);
-            return;
-          }
-          const off = size * 0.52;
-          const dirs = [
-            [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]
-          ];
-          mb.addBox(center, [size * 0.55, size * 0.55, size * 0.55], 0, depth === 2 ? nodeCol : strutCol, [depth === 2 ? 1.8 : 0.1, 0.05, depth, 0.85]);
-          for (const d of dirs) {
-            if (depth === 1 && rng() < 0.25) continue;
-            subOct(
-              [center[0] + d[0] * off, center[1] + d[1] * off, center[2] + d[2] * off],
-              size * 0.46,
-              depth - 1
-            );
+          if (depth < maxDepth) {
+            const tipPos = pts[pts.length - 1];
+            const branches = depth === 0 ? 4 : 2 + Math.floor(rng() * 2);
+            for (let b = 0; b < branches; b++) {
+              const a = (b / branches) * Math.PI * 2 + rng() * 0.5;
+              const newDir = v3.norm([curDir[0] + Math.cos(a) * 0.55, curDir[1] + 0.5, curDir[2] + Math.sin(a) * 0.55]);
+              growCoral(tipPos, newDir, len * 0.7, rad * 0.66, depth + 1);
+            }
           }
         }
-        subOct([0, 0, 0], 1.05, 2);
-
-        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Lattice`;
-        return { mesh: mb.finalize(false), name, animMode: 3, sss: 0.0, accent: nodeCol };
+        growCoral([0, 0, 0], [0, 1, 0], 0.75, 0.16, 0);
+        const name = `${NAME_PREFIX[Math.floor(rng() * NAME_PREFIX.length)]} Reef Coral`;
+        return { mesh: mb.finalize(true, true), name, animMode: 7, sss: 0.58, accent: hslToRgb(coralHue, 0.75, 0.58) };
       },
     };
 
     const CATEGORIES = Object.keys(GENERATORS);
+    const GROUNDED_CATS = new Set(["vallisneria", "stem_plant", "broadleaf_coral"]);
+    const DIRECTIONAL_CATS = new Set(["tropical_fish", "koi", "turtle", "manta"]);
+    const SWIMMING_CATS = CATEGORIES.filter((c) => !GROUNDED_CATS.has(c));
+    const PLANT_CATS = CATEGORIES.filter((c) => GROUNDED_CATS.has(c));
 
     // =========================================================================
-    // 4. WebGPU Setup: 4x MSAA + rgba16float HDR + Cook-Torrance PBR + Bloom
+    // 5. WebGPU Pipelines & WGSL Shaders (4x MSAA + Caustics + Glass/Water + Bloom)
     // =========================================================================
     const canvas = document.getElementById("gpu-canvas");
     const hudEl = document.getElementById("hud");
@@ -1440,7 +1667,7 @@
     const HDR_FORMAT = "rgba16float";
     const SAMPLE_COUNT = 4;
 
-    // 4a. Backdrop + Volumetric Light Shafts Shader
+    // 5a. Aquarium Gallery Backdrop
     const BACKDROP_WGSL = /* wgsl */`
       struct Uniforms {
         viewProj : mat4x4f,
@@ -1466,29 +1693,26 @@
       }
 
       @fragment
-      fn fs_bg(in : BGOut) -> @location(0) vec4f {
+      fn fs_bg(inp : BGOut) -> @location(0) vec4f {
         let t = u.camTime.w;
-        let deep = vec3f(0.008, 0.014, 0.028);
-        let mid  = vec3f(0.02, 0.042, 0.085) + u.accent.rgb * 0.035;
-        var col = mix(deep, mid, pow(in.uv.y, 1.3));
-
-        // Subtle volumetric god-rays from top-right
-        let rayCoord = in.uv.x * 5.0 - in.uv.y * 1.8;
-        let rays = pow(max(0.0, sin(rayCoord * 2.5 + t * 0.35) * 0.5 + 0.5), 4.0)
-                 * smoothstep(0.1, 0.95, in.uv.y) * 0.075;
-        col += (vec3f(0.25, 0.55, 0.85) + u.accent.rgb * 0.5) * rays;
+        let deep = vec3f(0.012, 0.025, 0.042);
+        let mid  = vec3f(0.032, 0.088, 0.135) + u.accent.rgb * 0.015;
+        var col = mix(deep, mid, smoothstep(0.05, 0.85, inp.uv.y));
+        let glow = exp(-length((inp.uv - vec2f(0.5, 0.62)) * vec2f(1.2, 1.8)) * 2.2);
+        let shimmer = 0.88 + 0.12 * sin(inp.uv.x * 6.0 + t * 0.4);
+        col += vec3f(0.04, 0.14, 0.2) * glow * shimmer;
         return vec4f(col, 1.0);
       }
     `;
 
-    // 4b. Main Cook-Torrance PBR + 3D Procedural Bump + SSS Shader
+    // 5b. Main Aquarium Opaque PBR + Caustics + Procedural Animation Shader
     const SCENE_WGSL = /* wgsl */`
       struct Uniforms {
         viewProj : mat4x4f,
         model    : mat4x4f,
         camTime  : vec4f, // xyz = cameraPos, w = time
-        anim     : vec4f, // x = animMode, y = sssAmount, z = isFloor, w = unused
-        accent   : vec4f, // rgb = accentColor
+        anim     : vec4f, // x = animMode, y = sssAmount, z = surfaceFlag (0=entity, 1=sand/rock, 2=frame/LED), w = inspectFlag
+        accent   : vec4f,
       };
       @group(0) @binding(0) var<uniform> u : Uniforms;
 
@@ -1517,23 +1741,32 @@
         let phase = v.attrs.z;
 
         if (mode > 0.5 && mode < 1.5) {
-          let wave = sin(t * 2.4 + phase + p.y * 2.5) * 0.075 * w;
+          // Squid / Seahorse leisurely sway
+          let wave = sin(t * 1.35 + phase + p.y * 2.0) * 0.07 * w;
           p.x += wave;
-          p.z += cos(t * 2.1 + phase + p.y * 2.2) * 0.075 * w;
-          p.y += sin(t * 2.0 + phase) * 0.035 * w;
+          p.z += cos(t * 1.15 + phase + p.y * 1.8) * 0.06 * w;
         } else if (mode >= 1.5 && mode < 2.5) {
+          // Manta / Turtle slow wing stroke
           let wingDist = abs(p.x);
-          p.y += sin(t * 3.0 - p.z * 1.4) * 0.22 * wingDist * w;
-        } else if (mode >= 2.5 && mode < 3.5) {
-          p.y += sin(t * 1.8 + phase) * 0.025 * (0.3 + w);
+          p.y += sin(t * 1.55 - p.z * 1.0) * 0.28 * wingDist * w;
         } else if (mode >= 3.5 && mode < 4.5) {
-          // Serpentine S-wave swimming
-          p.x += sin(t * 3.8 - p.z * 2.5) * 0.24 * w;
-          p.y += cos(t * 2.6 - p.z * 1.8) * 0.07 * w;
-        } else if (mode >= 4.5) {
-          // Graceful wingbeat + hover bob
-          let wingDist = abs(p.x);
-          p.y += sin(t * 6.5 - wingDist * 1.2) * 0.32 * wingDist * w + sin(t * 2.2) * 0.05;
+          // Fish / Koi soft lateral body wave (tail-weighted via animWeight)
+          p.x += sin(t * 3.4 - p.z * 2.8 + phase) * 0.11 * w;
+        } else if (mode >= 5.5 && mode < 6.5) {
+          // Jellyfish asymmetric bell pulse + tentacle trail
+          let raw = sin(t * 1.15 + phase);
+          let pulse = raw * mix(0.55, 1.0, step(0.0, raw));
+          let bellMask = clamp(p.y + 0.5, 0.0, 1.0);
+          p.x *= 1.0 + pulse * 0.12 * bellMask * w;
+          p.z *= 1.0 + pulse * 0.12 * bellMask * w;
+          p.y += pulse * 0.055 * w;
+          p.x += sin(t * 0.85 + phase + p.y * 2.2) * 0.055 * (1.0 - bellMask) * w;
+        } else if (mode >= 6.5) {
+          // Rooted Aquatic Plant slow current sway (y=0 anchored)
+          let h = max(v.pos.y, 0.0);
+          let sway = pow(h, 1.35);
+          p.x += sin(t * 0.95 + phase + h * 1.5) * 0.10 * sway;
+          p.z += cos(t * 0.75 + phase * 1.3 + h * 1.2) * 0.065 * sway;
         }
 
         let wp = (u.model * vec4f(p, 1.0)).xyz;
@@ -1549,7 +1782,6 @@
         return out;
       }
 
-      // Fast 3D hash & value noise for procedural micro-detail
       fn hash3(p : vec3f) -> f32 {
         var q = fract(p * 0.3183099 + vec3f(0.1, 0.2, 0.3));
         q *= 17.0;
@@ -1573,7 +1805,16 @@
         return 0.55 * noise3(p) + 0.30 * noise3(p * 2.13) + 0.15 * noise3(p * 4.41);
       }
 
-      // Cook-Torrance GGX PBR helpers
+      // Animated underwater caustics pattern (slow, soft drift)
+      fn caustics(xz : vec2f, t : f32) -> f32 {
+        let p1 = xz * 1.45 + vec2f(t * 0.18, -t * 0.14);
+        let p2 = xz * 1.85 + vec2f(-t * 0.15, t * 0.20);
+        let w1 = sin(p1.x * 2.2 + sin(p1.y * 2.6 + t * 0.55));
+        let w2 = cos(p2.y * 2.4 + sin(p2.x * 2.1 - t * 0.48));
+        let ridge = 1.0 - abs(w1 + w2) * 0.5;
+        return pow(clamp(ridge, 0.0, 1.0), 3.6);
+      }
+
       fn distGGX(N : vec3f, H : vec3f, rough : f32) -> f32 {
         let a = rough * rough;
         let a2 = a * a;
@@ -1609,67 +1850,190 @@
       }
 
       @fragment
-      fn fs_main(in : VSOut) -> @location(0) vec4f {
-        // Studio floor shading with radial contact shadow & subtle rings
-        if (u.anim.z > 0.5) {
-          let r = length(in.worldPos.xz);
-          let fade = smoothstep(14.5, 1.5, r);
-          let contactAO = smoothstep(0.35, 2.2, r);
-          let ring = smoothstep(0.025, 0.0, abs(r - 1.68)) * 0.8
-                   + smoothstep(0.02, 0.0, abs(r - 4.4)) * 0.35
-                   + smoothstep(0.02, 0.0, abs(r - 7.8)) * 0.2;
-          let floorCol = vec3f(0.015, 0.025, 0.045) * (0.35 + 0.65 * contactAO)
-                       + u.accent.rgb * ring * 1.25;
-          return vec4f(floorCol * fade, 1.0);
-        }
+      fn fs_main(inp : VSOut) -> @location(0) vec4f {
+        let surf = u.anim.z;
+        let t = u.camTime.w;
 
-        // Procedural micro-bump & surface variation from localPos
-        let nFreq = 7.5;
+        // Micro-bump from localPos (higher frequency for sand/rocks)
+        let nFreq = select(8.0, 14.0, surf > 0.5 && surf < 1.5);
         let eps = 0.02;
-        let f0 = fbm(in.localPos * nFreq);
-        let fx = fbm((in.localPos + vec3f(eps, 0.0, 0.0)) * nFreq);
-        let fy = fbm((in.localPos + vec3f(0.0, eps, 0.0)) * nFreq);
-        let fz = fbm((in.localPos + vec3f(0.0, 0.0, eps)) * nFreq);
+        let f0 = fbm(inp.localPos * nFreq);
+        let fx = fbm((inp.localPos + vec3f(eps, 0.0, 0.0)) * nFreq);
+        let fy = fbm((inp.localPos + vec3f(0.0, eps, 0.0)) * nFreq);
+        let fz = fbm((inp.localPos + vec3f(0.0, 0.0, eps)) * nFreq);
         let grad = vec3f(fx - f0, fy - f0, fz - f0) / eps;
 
-        let bumpStrength = mix(0.08, 0.025, in.attrs.w);
-        let N = normalize(in.worldNorm - grad * bumpStrength);
-        let V = normalize(u.camTime.xyz - in.worldPos);
+        let bumpStrength = select(mix(0.06, 0.015, inp.attrs.w), 0.04, surf > 0.5);
+        let N = normalize(inp.worldNorm - grad * bumpStrength);
+        let V = normalize(u.camTime.xyz - inp.worldPos);
 
-        let albedo = in.color * (0.86 + 0.28 * f0);
-        let metal = clamp(in.attrs.w, 0.0, 1.0);
-        let rough = clamp(mix(0.52, 0.16, metal) + (f0 - 0.5) * 0.18, 0.08, 0.92);
+        let albedo = inp.color * (0.88 + 0.24 * f0);
+        let metal = clamp(inp.attrs.w, 0.0, 1.0);
+        let rough = clamp(mix(0.48, 0.16, metal) + (f0 - 0.5) * 0.16, 0.08, 0.92);
         let F0 = mix(vec3f(0.04), albedo, metal);
 
-        // Key light + Cool fill + Accent rim light
-        let L1 = normalize(vec3f(0.6, 0.88, 0.55));
-        let L2 = normalize(vec3f(-0.75, 0.25, -0.6));
-        let L3 = normalize(vec3f(0.0, -0.8, 0.35));
+        // Overhead Daylight Aquarium LED + Underwater Caustics
+        let L1 = normalize(vec3f(0.14, 0.96, 0.22));
+        let L2 = normalize(vec3f(-0.65, 0.35, 0.65));
+        let L3 = normalize(vec3f(0.45, -0.5, -0.55));
+
+        var causticBoost = 0.0;
+        if (surf < 1.5 && u.anim.w < 0.5) {
+          let depthBelow = clamp((2.95 - inp.worldPos.y) * 0.28, 0.0, 1.0);
+          let cVal = caustics(inp.worldPos.xz + inp.worldPos.y * 0.18, t);
+          let cStrength = select(0.50, 1.12, surf > 0.5);
+          causticBoost = cVal * max(N.y, 0.12) * depthBelow * cStrength;
+        }
 
         var Lo = vec3f(0.0);
-        Lo += evalLight(L1, vec3f(2.6, 2.45, 2.3), N, V, albedo, metal, rough, F0);
-        Lo += evalLight(L2, u.accent.rgb * 1.35 + vec3f(0.25, 0.4, 0.7), N, V, albedo, metal, rough, F0);
-        Lo += evalLight(L3, vec3f(0.2, 0.35, 0.55), N, V, albedo, metal, rough, F0);
+        Lo += evalLight(L1, vec3f(2.6, 2.75, 2.7) * (1.0 + causticBoost), N, V, albedo, metal, rough, F0);
+        Lo += evalLight(L2, vec3f(0.45, 0.72, 0.85), N, V, albedo, metal, rough, F0);
+        Lo += evalLight(L3, vec3f(0.22, 0.42, 0.52), N, V, albedo, metal, rough, F0);
 
-        // Subsurface Scattering (SSS) wrap for organic models
+        // Subsurface Scattering (SSS) wrap for leaves, coral & jellyfish
         let sssWrap = max(0.0, (dot(-N, L1) + 0.55) / 1.55);
-        let sss = albedo * u.anim.y * pow(sssWrap, 2.0) * 0.65;
+        let sss = albedo * u.anim.y * pow(sssWrap, 1.8) * 0.72;
 
-        // Ambient IBL-like hemisphere + Fresnel rim
-        let hemi = mix(vec3f(0.025, 0.035, 0.06), vec3f(0.09, 0.14, 0.22), N.y * 0.5 + 0.5);
-        let rim = pow(1.0 - max(dot(N, V), 0.0), 3.5) * (u.accent.rgb * 0.55 + vec3f(0.15));
+        let hemi = mix(vec3f(0.06, 0.14, 0.19), vec3f(0.22, 0.36, 0.42), N.y * 0.5 + 0.5);
+        let rim = pow(1.0 - max(dot(N, V), 0.0), 3.6) * vec3f(0.18, 0.42, 0.52);
+        let emissive = inp.color * inp.attrs.x;
 
-        let emissive = in.color * in.attrs.x * (0.9 + 0.2 * sin(u.camTime.w * 2.8 + in.attrs.z));
         var col = hemi * albedo + Lo + sss + rim + emissive;
 
-        let dist = length(u.camTime.xyz - in.worldPos);
-        let fog = clamp((dist - 9.0) / 18.0, 0.0, 1.0);
-        col = mix(col, vec3f(0.012, 0.022, 0.045), fog);
+        // Underwater depth absorption (slightly stronger teal falloff)
+        if (surf < 1.5 && u.anim.w < 0.5) {
+          let dist = length(u.camTime.xyz - inp.worldPos);
+          let waterTint = vec3f(0.02, 0.14, 0.22);
+          let waterFog = clamp((dist - 4.5) / 18.0, 0.0, 0.62);
+          col = mix(col, waterTint, waterFog);
+        }
+
         return vec4f(col, 1.0);
       }
     `;
 
-    // 4c. HDR Post-Processing Bloom + ACES Tone Mapping + Vignette
+    // 5c. Transparent Glass Tank Walls, Rippling Water Surface & Rising Bubbles
+    const WATER_WGSL = /* wgsl */`
+      struct Uniforms {
+        viewProj : mat4x4f,
+        model    : mat4x4f,
+        camTime  : vec4f,
+        anim     : vec4f,
+        accent   : vec4f,
+      };
+      @group(0) @binding(0) var<uniform> u : Uniforms;
+
+      struct VSIn {
+        @location(0) pos   : vec3f,
+        @location(1) norm  : vec3f,
+        @location(2) color : vec3f,
+        @location(3) attrs : vec4f, // w: 0=glass, 1=water surface, 2=bubble
+      };
+
+      struct VSOut {
+        @builtin(position) clipPos : vec4f,
+        @location(0) worldPos : vec3f,
+        @location(1) worldNorm: vec3f,
+        @location(2) color    : vec3f,
+        @location(3) attrs    : vec4f,
+      };
+
+      @vertex
+      fn vs_water(v : VSIn) -> VSOut {
+        var p = v.pos;
+        var n = v.norm;
+        let t = u.camTime.w;
+        let kind = v.attrs.w;
+
+        if (kind > 0.5 && kind < 1.5) {
+          // Multi-octave water surface: broad swell + mid ripple + fine chop
+          let w1 = sin(p.x * 0.95 + t * 0.85) * cos(p.z * 1.05 - t * 0.72) * 0.038;
+          let w2 = sin(p.x * 1.9 + p.z * 1.4 - t * 1.45) * 0.016;
+          let w3 = sin((p.x - p.z) * 3.6 + t * 2.1) * cos(p.x * 2.8 - t * 1.8) * 0.007;
+          p.y += w1 + w2 + w3;
+          let dx = 0.95 * cos(p.x * 0.95 + t * 0.85) * cos(p.z * 1.05 - t * 0.72) * 0.038
+                 + 1.9 * cos(p.x * 1.9 + p.z * 1.4 - t * 1.45) * 0.016
+                 + 3.6 * cos((p.x - p.z) * 3.6 + t * 2.1) * cos(p.x * 2.8 - t * 1.8) * 0.007
+                 - 2.8 * sin((p.x - p.z) * 3.6 + t * 2.1) * sin(p.x * 2.8 - t * 1.8) * 0.007;
+          let dz = -1.05 * sin(p.x * 0.95 + t * 0.85) * sin(p.z * 1.05 - t * 0.72) * 0.038
+                 + 1.4 * cos(p.x * 1.9 + p.z * 1.4 - t * 1.45) * 0.016
+                 - 3.6 * cos((p.x - p.z) * 3.6 + t * 2.1) * cos(p.x * 2.8 - t * 1.8) * 0.007;
+          n = normalize(vec3f(-dx, 1.0, -dz));
+        } else if (kind >= 1.5) {
+          // Rising air bubbles: ease near surface, organic wobble, inflate then flatten
+          let startY = v.attrs.x;
+          let speed = v.attrs.y;
+          let phase = v.attrs.z;
+          let prog = fract(phase + t * speed);
+          let ease = prog * prog * (3.0 - 2.0 * prog);
+          let nearTop = smoothstep(0.72, 1.0, prog);
+          let travel = max(2.92 - startY, 0.2);
+          let rise = mix(prog, ease, 0.65) * (1.0 - nearTop * 0.18);
+          let inflate = 1.0 + prog * 0.26;
+          let flatten = mix(1.0, 0.45, nearTop);
+          // Rest mesh sits at y~0; scale local height, lift, wobble, and push out along normal
+          p.y = v.pos.y * inflate * flatten + startY + rise * travel;
+          let wob1 = sin(t * 1.15 + phase * 18.0 + prog * 5.5) * 0.055;
+          let wob2 = sin(t * 0.62 + phase * 11.0 + prog * 3.2) * 0.035;
+          p.x = v.pos.x + wob1 + wob2 + n.x * prog * 0.018;
+          p.z = v.pos.z
+              + cos(t * 0.98 + phase * 14.0 + prog * 4.8) * 0.048
+              + cos(t * 0.55 + phase * 9.0 + prog * 2.6) * 0.028
+              + n.z * prog * 0.018;
+          // Flatten horizontally near the surface as the bubble pops
+          p.x += n.x * nearTop * 0.012;
+          p.z += n.z * nearTop * 0.012;
+        }
+
+        let wp = (u.model * vec4f(p, 1.0)).xyz;
+        let wn = normalize((u.model * vec4f(n, 0.0)).xyz);
+
+        var out : VSOut;
+        out.clipPos = u.viewProj * vec4f(wp, 1.0);
+        out.worldPos = wp;
+        out.worldNorm = wn;
+        out.color = v.color;
+        out.attrs = v.attrs;
+        return out;
+      }
+
+      @fragment
+      fn fs_water(inp : VSOut) -> @location(0) vec4f {
+        let N = normalize(inp.worldNorm);
+        let V = normalize(u.camTime.xyz - inp.worldPos);
+        let L = normalize(vec3f(0.14, 0.96, 0.22));
+        let ndv = abs(dot(N, V));
+        let fresnel = pow(1.0 - clamp(ndv, 0.0, 1.0), 3.4);
+        let H = normalize(L + V);
+        let spec = pow(max(abs(dot(N, H)), 0.0), 140.0);
+
+        let kind = inp.attrs.w;
+        if (kind >= 1.5) {
+          // Glass-like rising bubbles: dark core, bright rim, sharp highlight
+          let rim = pow(1.0 - clamp(ndv, 0.0, 1.0), 2.2);
+          let core = mix(vec3f(0.35, 0.55, 0.62), inp.color, 0.55);
+          let bCol = core * (0.45 + rim * 1.1) + vec3f(0.72, 0.92, 1.0) * fresnel * 0.85
+                   + vec3f(spec * 3.4);
+          let alpha = mix(0.08, 0.78, rim * 0.85 + fresnel * 0.35);
+          return vec4f(bCol, alpha);
+        }
+        if (kind > 0.5) {
+          // Shimmering water surface — mirror at grazing, clearer overhead
+          let fSurf = pow(1.0 - clamp(ndv, 0.0, 1.0), 4.2);
+          let surfCol = mix(inp.color * 0.62, vec3f(0.68, 0.94, 1.0), fSurf * 0.82)
+                      + vec3f(0.15, 0.42, 0.48) * (1.0 - fSurf) * 0.12
+                      + vec3f(spec * 2.8);
+          let alpha = mix(0.10, 0.62, fSurf);
+          return vec4f(surfCol, alpha);
+        }
+        // Ultra-clear aquarium glass panes with crisp edge sheen
+        let glassCol = mix(inp.color * 0.55, vec3f(0.78, 0.96, 0.98), fresnel) + vec3f(spec * 1.1);
+        let alpha = mix(0.032, 0.23, fresnel);
+        return vec4f(glassCol, alpha);
+      }
+    `;
+
+    // 5d. HDR Post-Processing (Tuned Bloom + ACES + Vignette)
     const POST_WGSL = /* wgsl */`
       @group(0) @binding(0) var hdrTex : texture_2d<f32>;
       @group(0) @binding(1) var hdrSamp : sampler;
@@ -1698,32 +2062,29 @@
       }
 
       @fragment
-      fn fs_post(in : POut) -> @location(0) vec4f {
-        let base = textureSample(hdrTex, hdrSamp, in.uv).rgb;
+      fn fs_post(inp : POut) -> @location(0) vec4f {
+        let base = textureSample(hdrTex, hdrSamp, inp.uv).rgb;
         let texSize = vec2f(textureDimensions(hdrTex));
         let px = 1.0 / texSize;
 
-        // Multi-ring soft HDR bloom
         var bloom = vec3f(0.0);
         let dirs = array<vec2f, 8>(
           vec2f(1.0, 0.0), vec2f(-1.0, 0.0), vec2f(0.0, 1.0), vec2f(0.0, -1.0),
           vec2f(0.707, 0.707), vec2f(-0.707, 0.707), vec2f(0.707, -0.707), vec2f(-0.707, -0.707)
         );
         for (var r = 1; r <= 3; r++) {
-          let rad = f32(r) * 4.5;
+          let rad = f32(r) * 4.0;
           for (var i = 0; i < 8; i++) {
-            let s = textureSample(hdrTex, hdrSamp, in.uv + dirs[i] * rad * px).rgb;
+            let s = textureSample(hdrTex, hdrSamp, inp.uv + dirs[i] * rad * px).rgb;
             let lum = dot(s, vec3f(0.2126, 0.7152, 0.0722));
-            bloom += s * max(lum - 0.85, 0.0);
+            bloom += s * max(lum - 1.35, 0.0);
           }
         }
         bloom /= 24.0;
 
-        var col = base + bloom * 0.55;
-
-        // Subtle cinematic vignette
-        let d = distance(in.uv, vec2f(0.5));
-        col *= 1.0 - smoothstep(0.45, 0.95, d) * 0.35;
+        var col = base + bloom * 0.26;
+        let d = distance(inp.uv, vec2f(0.5));
+        col *= 1.0 - smoothstep(0.5, 0.98, d) * 0.28;
 
         col = aces(col);
         col = pow(col, vec3f(1.0 / 2.2));
@@ -1733,7 +2094,18 @@
 
     const bgModule = device.createShaderModule({ code: BACKDROP_WGSL });
     const sceneModule = device.createShaderModule({ code: SCENE_WGSL });
+    const waterModule = device.createShaderModule({ code: WATER_WGSL });
     const postModule = device.createShaderModule({ code: POST_WGSL });
+
+    const vertexLayout = [{
+      arrayStride: FLOATS_PER_VERT * 4,
+      attributes: [
+        { shaderLocation: 0, offset: 0, format: "float32x3" },
+        { shaderLocation: 1, offset: 12, format: "float32x3" },
+        { shaderLocation: 2, offset: 24, format: "float32x3" },
+        { shaderLocation: 3, offset: 36, format: "float32x4" },
+      ],
+    }];
 
     const bgPipeline = device.createRenderPipeline({
       layout: "auto",
@@ -1746,23 +2118,30 @@
 
     const scenePipeline = device.createRenderPipeline({
       layout: "auto",
-      vertex: {
-        module: sceneModule,
-        entryPoint: "vs_main",
-        buffers: [{
-          arrayStride: FLOATS_PER_VERT * 4,
-          attributes: [
-            { shaderLocation: 0, offset: 0, format: "float32x3" },
-            { shaderLocation: 1, offset: 12, format: "float32x3" },
-            { shaderLocation: 2, offset: 24, format: "float32x3" },
-            { shaderLocation: 3, offset: 36, format: "float32x4" },
-          ],
-        }],
-      },
+      vertex: { module: sceneModule, entryPoint: "vs_main", buffers: vertexLayout },
       fragment: { module: sceneModule, entryPoint: "fs_main", targets: [{ format: HDR_FORMAT }] },
       primitive: { topology: "triangle-list", cullMode: "none" },
       multisample: { count: SAMPLE_COUNT },
       depthStencil: { format: "depth24plus", depthWriteEnabled: true, depthCompare: "less" },
+    });
+
+    const waterPipeline = device.createRenderPipeline({
+      layout: "auto",
+      vertex: { module: waterModule, entryPoint: "vs_water", buffers: vertexLayout },
+      fragment: {
+        module: waterModule,
+        entryPoint: "fs_water",
+        targets: [{
+          format: HDR_FORMAT,
+          blend: {
+            color: { srcFactor: "src-alpha", dstFactor: "one-minus-src-alpha", operation: "add" },
+            alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" },
+          },
+        }],
+      },
+      primitive: { topology: "triangle-list", cullMode: "none" },
+      multisample: { count: SAMPLE_COUNT },
+      depthStencil: { format: "depth24plus", depthWriteEnabled: false, depthCompare: "less" },
     });
 
     const postPipeline = device.createRenderPipeline({
@@ -1772,57 +2151,50 @@
       primitive: { topology: "triangle-list" },
     });
 
-    const uniformBuffer = device.createBuffer({
+    const createUniform = () => device.createBuffer({
       size: 176,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-    const floorUniformBuffer = device.createBuffer({
-      size: 176,
-      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
+    const bgUniformBuffer = createUniform();
+    const subUniformBuffer = createUniform();
+    const frameUniformBuffer = createUniform();
+    const waterUniformBuffer = createUniform();
 
     const bgBindGroup = device.createBindGroup({
       layout: bgPipeline.getBindGroupLayout(0),
-      entries: [{ binding: 0, resource: { buffer: uniformBuffer } }],
+      entries: [{ binding: 0, resource: { buffer: bgUniformBuffer } }],
     });
-    const modelBindGroup = device.createBindGroup({
+    const subBindGroup = device.createBindGroup({
       layout: scenePipeline.getBindGroupLayout(0),
-      entries: [{ binding: 0, resource: { buffer: uniformBuffer } }],
+      entries: [{ binding: 0, resource: { buffer: subUniformBuffer } }],
     });
-    const floorBindGroup = device.createBindGroup({
+    const frameBindGroup = device.createBindGroup({
       layout: scenePipeline.getBindGroupLayout(0),
-      entries: [{ binding: 0, resource: { buffer: floorUniformBuffer } }],
+      entries: [{ binding: 0, resource: { buffer: frameUniformBuffer } }],
+    });
+    const waterBindGroup = device.createBindGroup({
+      layout: waterPipeline.getBindGroupLayout(0),
+      entries: [{ binding: 0, resource: { buffer: waterUniformBuffer } }],
     });
 
     const linearSampler = device.createSampler({ magFilter: "linear", minFilter: "linear" });
 
-    // Studio floor disc
-    function buildFloorDisc() {
-      const mb = new MeshBuilder();
-      const segs = 72, r = 15.0, y = -1.62;
-      for (let i = 0; i < segs; i++) {
-        const a0 = (i / segs) * Math.PI * 2;
-        const a1 = ((i + 1) / segs) * Math.PI * 2;
-        mb.addTri(
-          [0, y, 0],
-          [Math.cos(a1) * r, y, Math.sin(a1) * r],
-          [Math.cos(a0) * r, y, Math.sin(a0) * r],
-          [1, 1, 1], [1, 1, 1], [1, 1, 1],
-          [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]
-        );
-      }
-      return { data: new Float32Array(mb.verts), vertCount: mb.verts.length / FLOATS_PER_VERT };
+    // Create static aquarium geometry buffers
+    const env = buildAquariumEnvironment();
+    function makeVertexBuffer(mesh) {
+      const buf = device.createBuffer({
+        size: Math.max(mesh.data.byteLength, 64),
+        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+      });
+      device.queue.writeBuffer(buf, 0, mesh.data);
+      return buf;
     }
-
-    const floorMesh = buildFloorDisc();
-    const floorBuffer = device.createBuffer({
-      size: floorMesh.data.byteLength,
-      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-    });
-    device.queue.writeBuffer(floorBuffer, 0, floorMesh.data);
+    const substrateBuffer = makeVertexBuffer(env.substrateMesh);
+    const frameBuffer = makeVertexBuffer(env.frameMesh);
+    const waterBuffer = makeVertexBuffer(env.waterMesh);
 
     // =========================================================================
-    // 5. Render Targets, Camera & Infinite Forge Loop
+    // 6. Render Targets, Aquarium Ecosystem Spawner & Steering Loop
     // =========================================================================
     let depthTexture = null;
     let hdrMsaaTex = null;
@@ -1872,30 +2244,14 @@
     window.addEventListener("resize", ensureSize);
     ensureSize();
 
-    function mat4Transform3D(tx, ty, tz, yaw, pitch, scale) {
-      const cy = Math.cos(yaw), sy = Math.sin(yaw);
-      const cp = Math.cos(pitch), sp = Math.sin(pitch);
-      // R_y(yaw) * R_x(pitch) * scale
-      return new Float32Array([
-        cy * scale, 0, -sy * scale, 0,
-        sy * sp * scale, cp * scale, cy * sp * scale, 0,
-        sy * cp * scale, -sp * scale, cy * cp * scale, 0,
-        tx, ty, tz, 1,
-      ]);
-    }
-
     let currentCategory = "random";
-    let viewMode = "swarm"; // "swarm" (default) | "single"
+    let viewMode = "swarm"; // "swarm" (Aquarium default) | "single" (Inspect)
     let autoCycle = true;
     let autoSpin = true;
-    const MAX_SWARM_MODELS = 32;
-    const GROUNDED_CATS = new Set(["flora", "crystal", "architecture"]);
-    const DIRECTIONAL_CATS = new Set(["leviathan", "serpent", "spaceship", "butterfly"]);
+    const MAX_SWARM_MODELS = 36;
+    const MAX_PLANTS = 14;
     let cycleElapsed = 0;
     let forgedCount = 0;
-
-    // Array of active model entities in the scene
-    // Each: { result, vertexBuffer, uniformBuffer, bindGroup, pos, baseRot, rotSpeed, targetScale, transitionT, driftAmp, driftSpeed, phase, grounded }
     let entities = [];
 
     function destroyEntity(ent) {
@@ -1909,30 +2265,22 @@
     }
 
     function getCycleSeconds() {
-      return viewMode === "swarm" ? 2.0 : 6.0;
+      return viewMode === "swarm" ? 3.0 : 6.0;
     }
 
-    function forgeNextModel() {
+    function spawnModel(forcedCat = null, startFullyGrown = false) {
       const t0 = performance.now();
       const seed = (Math.random() * 0xFFFFFFFF) >>> 0;
       const rng = mulberry32(seed);
-      const cat = currentCategory === "random"
+      const cat = forcedCat || (currentCategory === "random"
         ? CATEGORIES[Math.floor(rng() * CATEGORIES.length)]
-        : currentCategory;
+        : currentCategory);
 
       const result = GENERATORS[cat](rng);
       const genMs = (performance.now() - t0).toFixed(1);
 
-      const vertexBuffer = device.createBuffer({
-        size: Math.max(result.mesh.data.byteLength, 64),
-        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-      });
-      device.queue.writeBuffer(vertexBuffer, 0, result.mesh.data);
-
-      const uBuf = device.createBuffer({
-        size: 176,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      });
+      const vertexBuffer = makeVertexBuffer(result.mesh);
+      const uBuf = createUniform();
       const bGroup = device.createBindGroup({
         layout: scenePipeline.getBindGroupLayout(0),
         entries: [{ binding: 0, resource: { buffer: uBuf } }],
@@ -1943,40 +2291,76 @@
 
       if (viewMode === "single") {
         clearEntities();
+        const grounded = GROUNDED_CATS.has(cat);
         entities.push({
           result,
+          cat,
           vertexBuffer,
           uniformBuffer: uBuf,
           bindGroup: bGroup,
-          pos: [0, 0, 0],
+          pos: [0, grounded ? -1.35 : 0, 0],
+          vel: [0, 0, 0],
+          swimSpeed: 0,
+          yaw: 0,
+          pitch: 0,
+          prevYaw: 0,
           baseRot: 0,
-          rotSpeed: 0.38,
+          rotSpeed: 0.22,
           targetScale: 1.0,
-          transitionT: 0,
-          driftAmp: 0,
-          driftSpeed: 0,
+          transitionT: startFullyGrown ? 1 : 0,
           phase: 0,
+          wanderFreq: 0,
           grounded: false,
+          directional: false,
         });
       } else {
+        const grounded = GROUNDED_CATS.has(cat);
+        const directional = DIRECTIONAL_CATS.has(cat);
+
+        // Recycle oldest plant if over plant cap, or oldest overall if over tank cap
+        if (grounded) {
+          const plantCount = entities.filter((e) => e.grounded).length;
+          if (plantCount >= MAX_PLANTS) {
+            const idx = entities.findIndex((e) => e.grounded);
+            if (idx !== -1) {
+              destroyEntity(entities[idx]);
+              entities.splice(idx, 1);
+            }
+          }
+        }
         if (entities.length >= MAX_SWARM_MODELS) {
           const oldest = entities.shift();
           destroyEntity(oldest);
         }
-        const idx = forgedCount - 1;
-        const isFirst = entities.length === 0;
-        const angle = idx * 2.399963 + (rng() - 0.5) * 0.35;
-        const radius = isFirst ? 0 : Math.min(8.6, 1.75 + Math.sqrt(entities.length) * 1.45);
-        const scale = isFirst ? 0.85 : 0.42 + rng() * 0.38;
-        const grounded = GROUNDED_CATS.has(cat);
-        const directional = DIRECTIONAL_CATS.has(cat);
-        const yPos = grounded
-          ? -1.62 + 1.05 * scale
-          : (isFirst ? 0.5 : -0.4 + rng() * 4.2);
 
-        const swimSpeed = grounded ? 0 : (directional ? 1.15 + rng() * 0.95 : 0.45 + rng() * 0.45);
+        let px, py, pz;
+        if (grounded) {
+          // Place plants naturally along the back and sides of the sand bed
+          px = (rng() - 0.5) * 9.8;
+          pz = -2.55 + rng() * 4.2;
+          if (Math.abs(px) < 1.8 && pz > 0.6) pz -= 1.5; // keep center-front window clear
+          py = sandHeight(px, pz) - 0.04;
+        } else {
+          px = (rng() - 0.5) * 8.6;
+          pz = (rng() - 0.5) * 4.2;
+          const floorY = sandHeight(px, pz);
+          py = floorY + 0.65 + rng() * (2.35 - floorY - 0.65);
+        }
+
+        const scale = grounded
+          ? 0.48 + rng() * 0.34
+          : (cat === "tropical_fish" || cat === "seahorse" || cat === "squid"
+            ? 0.32 + rng() * 0.2
+            : 0.44 + rng() * 0.24);
+        let swimSpeed = 0;
+        if (!grounded) {
+          if (cat === "jellyfish") swimSpeed = 0.10 + rng() * 0.10;
+          else if (cat === "squid" || cat === "seahorse") swimSpeed = 0.14 + rng() * 0.12;
+          else if (directional) swimSpeed = 0.35 + rng() * 0.30;
+          else swimSpeed = 0.12 + rng() * 0.16;
+        }
         const heading = rng() * Math.PI * 2;
-        const elev = (rng() - 0.5) * 0.5;
+        const elev = (rng() - 0.5) * 0.28;
 
         entities.push({
           result,
@@ -1984,39 +2368,49 @@
           vertexBuffer,
           uniformBuffer: uBuf,
           bindGroup: bGroup,
-          pos: [Math.cos(angle) * radius, yPos, Math.sin(angle) * radius],
+          pos: [px, py, pz],
           vel: grounded ? [0, 0, 0] : [
             Math.cos(elev) * Math.sin(heading) * swimSpeed,
-            Math.sin(elev) * swimSpeed * 0.5,
+            Math.sin(elev) * swimSpeed * 0.35,
             Math.cos(elev) * Math.cos(heading) * swimSpeed,
           ],
           swimSpeed,
           yaw: heading,
           pitch: 0,
+          prevYaw: heading,
           baseRot: rng() * Math.PI * 2,
-          rotSpeed: grounded ? 0.08 : (rng() - 0.5) * 0.5,
+          rotSpeed: grounded ? 0 : (rng() - 0.5) * 0.18,
           targetScale: scale,
-          transitionT: 0,
+          transitionT: startFullyGrown ? 1 : 0,
           phase: rng() * Math.PI * 2,
-          wanderFreq: 0.35 + rng() * 0.45,
+          wanderFreq: 0.12 + rng() * 0.16,
           grounded,
           directional,
         });
       }
 
       modelNameEl.textContent = result.name;
-      archetypeBadgeEl.textContent = `[${cat.toUpperCase()}]`;
+      archetypeBadgeEl.textContent = `[${cat.replace("_", " ").toUpperCase()}]`;
       statSeedEl.textContent = `Seed: #${seed.toString(16).toUpperCase().padStart(8, "0")}`;
       statTrisEl.textContent = `Tris: ${result.mesh.triCount.toLocaleString()}`;
       statTimeEl.textContent = `Gen: ${genMs} ms`;
       statCountEl.textContent = viewMode === "swarm"
-        ? `In Space: ${entities.length} / Total: ${forgedCount}`
-        : `Forged: ${forgedCount}`;
+        ? `In Tank: ${entities.length} / Total: ${forgedCount}`
+        : `Inspected: ${forgedCount}`;
     }
 
-    let camYaw = 0.65;
-    let camPitch = 0.24;
-    let camDist = 9.6;
+    function populateInitialAquarium() {
+      clearEntities();
+      forgedCount = 0;
+      const initPlants = ["vallisneria", "stem_plant", "broadleaf_coral", "vallisneria", "stem_plant"];
+      const initSwimmers = ["tropical_fish", "koi", "turtle", "jellyfish", "tropical_fish"];
+      for (const p of initPlants) spawnModel(p, true);
+      for (const s of initSwimmers) spawnModel(s, true);
+    }
+
+    let camYaw = 0.25;
+    let camPitch = 0.14;
+    let camDist = 11.6;
     let dragging = false;
     let lastX = 0, lastY = 0;
 
@@ -2029,58 +2423,62 @@
     window.addEventListener("pointermove", (e) => {
       if (!dragging) return;
       camYaw -= (e.clientX - lastX) * 0.008;
-      camPitch = Math.max(-1.15, Math.min(1.15, camPitch + (e.clientY - lastY) * 0.008));
+      camPitch = Math.max(-0.9, Math.min(1.15, camPitch + (e.clientY - lastY) * 0.008));
       lastX = e.clientX;
       lastY = e.clientY;
     });
     canvas.addEventListener("wheel", (e) => {
-      camDist = Math.max(2.4, Math.min(22.0, camDist + e.deltaY * 0.006));
+      camDist = Math.max(2.6, Math.min(22.0, camDist + e.deltaY * 0.006));
     }, { passive: true });
 
     const btnNext = document.getElementById("btn-next");
     const btnMode = document.getElementById("btn-mode");
     const btnClear = document.getElementById("btn-clear");
 
-    btnNext.addEventListener("click", forgeNextModel);
+    btnNext.addEventListener("click", () => spawnModel());
     btnMode.addEventListener("click", () => {
       viewMode = viewMode === "swarm" ? "single" : "swarm";
-      btnMode.textContent = viewMode === "swarm" ? "🌌 Mode: Swarm" : "🎯 Mode: Single";
-      btnNext.textContent = viewMode === "swarm" ? "⚡ Spawn Now" : "⚡ Next Model";
+      btnMode.textContent = viewMode === "swarm" ? "🌊 Mode: Aquarium" : "🔍 Mode: Inspect";
+      btnNext.textContent = viewMode === "swarm" ? "🐠 Spawn Now" : "🐠 Next Species";
       btnClear.style.display = viewMode === "swarm" ? "inline-flex" : "none";
-      camDist = viewMode === "swarm" ? 9.6 : 5.1;
-      clearEntities();
-      forgeNextModel();
+      if (viewMode === "swarm") {
+        camYaw = 0.25;
+        camPitch = 0.14;
+        camDist = 11.6;
+        populateInitialAquarium();
+      } else {
+        camDist = 4.6;
+        clearEntities();
+        spawnModel(null, false);
+      }
     });
-    btnClear.addEventListener("click", () => {
-      clearEntities();
-      forgeNextModel();
-    });
+    btnClear.addEventListener("click", populateInitialAquarium);
     document.getElementById("btn-toggle-auto").addEventListener("click", (e) => {
       autoCycle = !autoCycle;
       e.target.textContent = autoCycle ? "⏸ Auto: ON" : "▶ Auto: OFF";
     });
     document.getElementById("btn-wire-spin").addEventListener("click", (e) => {
       autoSpin = !autoSpin;
-      e.target.textContent = autoSpin ? "🌀 Spin: ON" : "🌀 Spin: OFF";
+      e.target.textContent = autoSpin ? "🌀 Orbit: ON" : "🌀 Orbit: OFF";
     });
     document.querySelectorAll("#category-pills .pill").forEach((btn) => {
       btn.addEventListener("click", () => {
         document.querySelectorAll("#category-pills .pill").forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
         currentCategory = btn.dataset.cat;
-        forgeNextModel();
+        spawnModel();
       });
     });
     window.addEventListener("keydown", (e) => {
       if (e.code === "Space") {
         e.preventDefault();
-        forgeNextModel();
+        spawnModel();
       } else if (e.key === "h" || e.key === "H") {
         hudEl.classList.toggle("hidden");
       }
     });
 
-    forgeNextModel();
+    populateInitialAquarium();
 
     let lastFrame = performance.now();
     let camAutoYaw = 0;
@@ -2093,14 +2491,14 @@
 
       if (autoCycle) {
         cycleElapsed += dt;
-        if (cycleElapsed >= cycleSec) forgeNextModel();
+        if (cycleElapsed >= cycleSec) spawnModel();
       }
       const pct = Math.min(100, (cycleElapsed / cycleSec) * 100);
       progressFillEl.style.width = `${pct}%`;
       countdownTextEl.textContent = autoCycle ? `${Math.max(0, cycleSec - cycleElapsed).toFixed(1)}s` : "Paused";
 
       if (autoSpin && !dragging && viewMode === "swarm") {
-        camYaw += dt * 0.12;
+        camYaw += dt * 0.06;
       } else if (autoSpin && !dragging && viewMode === "single") {
         camAutoYaw += dt * 0.38;
       }
@@ -2109,7 +2507,7 @@
       const aspect = canvas.width / canvas.height;
       const eye = [
         Math.cos(camPitch) * Math.sin(camYaw) * camDist,
-        Math.sin(camPitch) * camDist + (viewMode === "swarm" ? 0.6 : 0),
+        Math.sin(camPitch) * camDist + (viewMode === "swarm" ? 0.55 : 0),
         Math.cos(camPitch) * Math.cos(camYaw) * camDist,
       ];
       const lookTarget = viewMode === "swarm" ? [0, 0.35, 0] : [0, 0, 0];
@@ -2118,23 +2516,23 @@
       const viewProj = mat4Mul(proj, view);
 
       const latest = entities[entities.length - 1];
-      const accent = latest ? latest.result.accent : [0.3, 0.9, 0.95];
+      const accent = latest ? latest.result.accent : [0.22, 0.85, 0.78];
 
-      // Backdrop & floor uniforms
-      const bgData = new Float32Array(44);
-      bgData.set(viewProj, 0);
-      bgData.set([eye[0], eye[1], eye[2], t], 32);
-      bgData.set([accent[0], accent[1], accent[2], 1], 40);
-      device.queue.writeBuffer(uniformBuffer, 0, bgData);
-
-      const floorMat = mat4RotateYScale(0, 1.0);
-      const fData = new Float32Array(44);
-      fData.set(viewProj, 0);
-      fData.set(floorMat, 16);
-      fData.set([eye[0], eye[1], eye[2], t], 32);
-      fData.set([0, 0, 1, 0], 36);
-      fData.set([accent[0], accent[1], accent[2], 1], 40);
-      device.queue.writeBuffer(floorUniformBuffer, 0, fData);
+      // Update static environment uniform buffers
+      const identityMat = mat4Transform3D(0, 0, 0, 0, 0, 1);
+      const writeStaticUni = (buf, surfFlag) => {
+        const d = new Float32Array(44);
+        d.set(viewProj, 0);
+        d.set(identityMat, 16);
+        d.set([eye[0], eye[1], eye[2], t], 32);
+        d.set([0, 0, surfFlag, viewMode === "single" ? 1 : 0], 36);
+        d.set([accent[0], accent[1], accent[2], 1], 40);
+        device.queue.writeBuffer(buf, 0, d);
+      };
+      writeStaticUni(bgUniformBuffer, 0);
+      writeStaticUni(subUniformBuffer, 1);
+      writeStaticUni(frameUniformBuffer, 2);
+      writeStaticUni(waterUniformBuffer, 0);
 
       const encoder = device.createCommandEncoder();
 
@@ -2143,7 +2541,7 @@
         colorAttachments: [{
           view: hdrMsaaTex.createView(),
           resolveTarget: hdrResolveTex.createView(),
-          clearValue: { r: 0.01, g: 0.015, b: 0.03, a: 1.0 },
+          clearValue: { r: 0.012, g: 0.025, b: 0.042, a: 1.0 },
           loadOp: "clear",
           storeOp: "discard",
         }],
@@ -2161,34 +2559,44 @@
 
       scenePass.setPipeline(scenePipeline);
 
-      // Update 3D aquarium swimming physics in Swarm mode
+      // Draw Aquarium Sand/Hardscape + Metal Frame in Aquarium mode
       if (viewMode === "swarm") {
-        const TANK_R = 8.4;
-        const Y_MIN = -0.75;
-        const Y_MAX = 4.2;
+        scenePass.setBindGroup(0, subBindGroup);
+        scenePass.setVertexBuffer(0, substrateBuffer);
+        scenePass.draw(env.substrateMesh.vertCount);
+
+        scenePass.setBindGroup(0, frameBindGroup);
+        scenePass.setVertexBuffer(0, frameBuffer);
+        scenePass.draw(env.frameMesh.vertCount);
+
+        // Update 3D Rectangular Glass Tank Swimming Physics
+        const LIM_X = TANK_HALF_W - 0.85;
+        const LIM_Z = TANK_HALF_D - 0.72;
+        const Y_MAX = TANK_WATER_Y - 0.55;
+
         for (let i = 0; i < entities.length; i++) {
           const ent = entities[i];
           if (ent.grounded) continue;
 
-          // 1. Organic 3D wander force
           const wf = ent.wanderFreq;
           const ph = ent.phase;
-          let ax = Math.sin(t * wf + ph) * 0.85 + Math.cos(t * wf * 0.61 + ph * 1.7) * 0.45;
-          let ay = Math.sin(t * wf * 0.83 + ph * 2.3) * 0.42;
-          let az = Math.cos(t * wf * 0.91 + ph * 1.1) * 0.85 + Math.sin(t * wf * 0.53 + ph * 2.9) * 0.45;
+          let ax = Math.sin(t * wf + ph) * 0.38 + Math.cos(t * wf * 0.61 + ph * 1.7) * 0.18;
+          let ay = Math.sin(t * wf * 0.55 + ph * 2.3) * 0.16;
+          let az = Math.cos(t * wf * 0.91 + ph * 1.1) * 0.38 + Math.sin(t * wf * 0.53 + ph * 2.9) * 0.18;
 
-          // 2. Soft aquarium tank boundary steering
-          const rx = ent.pos[0], rz = ent.pos[2];
-          const rDist = Math.hypot(rx, rz);
-          if (rDist > TANK_R * 0.72) {
-            const pull = ((rDist - TANK_R * 0.72) / (TANK_R * 0.28)) * 2.8;
-            ax -= (rx / (rDist || 1)) * pull;
-            az -= (rz / (rDist || 1)) * pull;
-          }
-          if (ent.pos[1] < Y_MIN + 0.6) ay += (Y_MIN + 0.6 - ent.pos[1]) * 3.2;
-          if (ent.pos[1] > Y_MAX - 0.6) ay -= (ent.pos[1] - (Y_MAX - 0.6)) * 3.2;
+          // Rectangular tank wall repulsion (soft, avoids snap turns)
+          const softX = LIM_X - 0.9;
+          const softZ = LIM_Z - 0.7;
+          if (ent.pos[0] > softX) ax -= (ent.pos[0] - softX) * 1.6;
+          if (ent.pos[0] < -softX) ax += (-softX - ent.pos[0]) * 1.6;
+          if (ent.pos[2] > softZ) az -= (ent.pos[2] - softZ) * 1.6;
+          if (ent.pos[2] < -softZ) az += (-softZ - ent.pos[2]) * 1.6;
 
-          // 3. Soft separation between swimmers
+          const floorY = sandHeight(ent.pos[0], ent.pos[2]) + 0.65;
+          if (ent.pos[1] < floorY) ay += (floorY - ent.pos[1]) * 1.9;
+          if (ent.pos[1] > Y_MAX) ay -= (ent.pos[1] - Y_MAX) * 1.9;
+
+          // Soft separation between swimmers
           for (let j = 0; j < entities.length; j++) {
             if (i === j) continue;
             const o = entities[j];
@@ -2196,9 +2604,9 @@
             const dy = ent.pos[1] - o.pos[1];
             const dz = ent.pos[2] - o.pos[2];
             const d2 = dx * dx + dy * dy + dz * dz;
-            if (d2 > 0.001 && d2 < 2.25) {
+            if (d2 > 0.001 && d2 < 2.1) {
               const d = Math.sqrt(d2);
-              const push = (1.5 - d) * 1.6;
+              const push = (1.45 - d) * 0.85;
               ax += (dx / d) * push;
               ay += (dy / d) * push;
               az += (dz / d) * push;
@@ -2209,35 +2617,43 @@
           ent.vel[1] += ay * dt;
           ent.vel[2] += az * dt;
 
-          // Normalize smoothly toward target swimSpeed
           const spd = Math.hypot(ent.vel[0], ent.vel[1], ent.vel[2]) || 0.001;
-          const targetSpd = ent.swimSpeed;
-          const blend = targetSpd / spd;
-          ent.vel[0] = ent.vel[0] * (1 - 2.0 * dt) + ent.vel[0] * blend * (2.0 * dt);
-          ent.vel[1] = ent.vel[1] * (1 - 2.0 * dt) + ent.vel[1] * blend * (2.0 * dt);
-          ent.vel[2] = ent.vel[2] * (1 - 2.0 * dt) + ent.vel[2] * blend * (2.0 * dt);
+          const blend = ent.swimSpeed / spd;
+          const lerpAmt = Math.min(1, 1.0 * dt);
+          ent.vel[0] = ent.vel[0] * (1 - lerpAmt) + ent.vel[0] * blend * lerpAmt;
+          ent.vel[1] = ent.vel[1] * (1 - lerpAmt) + ent.vel[1] * blend * lerpAmt;
+          ent.vel[2] = ent.vel[2] * (1 - lerpAmt) + ent.vel[2] * blend * lerpAmt;
 
           ent.pos[0] += ent.vel[0] * dt;
           ent.pos[1] += ent.vel[1] * dt;
           ent.pos[2] += ent.vel[2] * dt;
 
-          // Smoothly orient toward swimming direction
+          // Hard containment safety clamp inside the glass panes
+          ent.pos[0] = Math.max(-LIM_X, Math.min(LIM_X, ent.pos[0]));
+          ent.pos[2] = Math.max(-LIM_Z, Math.min(LIM_Z, ent.pos[2]));
+          const minY = sandHeight(ent.pos[0], ent.pos[2]) + 0.35;
+          ent.pos[1] = Math.max(minY, Math.min(TANK_WATER_Y - 0.35, ent.pos[1]));
+
           if (ent.directional) {
             const targetYaw = Math.atan2(ent.vel[0], ent.vel[2]);
             let diff = targetYaw - ent.yaw;
             while (diff > Math.PI) diff -= Math.PI * 2;
             while (diff < -Math.PI) diff += Math.PI * 2;
-            ent.yaw += diff * Math.min(1, dt * 4.0);
+            ent.yaw += diff * Math.min(1, dt * 1.9);
+            const yawRate = (ent.yaw - (ent.prevYaw ?? ent.yaw)) / Math.max(dt, 0.0001);
+            ent.prevYaw = ent.yaw;
             const horiz = Math.hypot(ent.vel[0], ent.vel[2]) || 0.001;
-            const targetPitch = -Math.atan2(ent.vel[1], horiz) * 0.75;
-            ent.pitch += (targetPitch - ent.pitch) * Math.min(1, dt * 4.0);
+            const bank = Math.max(-0.22, Math.min(0.22, yawRate * 0.12));
+            const targetPitch = -Math.atan2(ent.vel[1], horiz) * 0.55 + bank;
+            ent.pitch += (targetPitch - ent.pitch) * Math.min(1, dt * 1.7);
           } else {
             ent.yaw = ent.baseRot + t * ent.rotSpeed;
-            ent.pitch = Math.sin(t * 1.1 + ent.phase) * 0.14;
+            ent.pitch = Math.sin(t * 0.55 + ent.phase) * 0.10;
           }
         }
       }
 
+      // Draw all creatures & plants
       for (const ent of entities) {
         ent.transitionT = Math.min(1, ent.transitionT + dt * 2.6);
         const easeOut = 1 - Math.pow(1 - ent.transitionT, 3);
@@ -2245,20 +2661,13 @@
 
         const yaw = viewMode === "single" ? camAutoYaw : ent.yaw;
         const pitch = viewMode === "single" ? 0 : ent.pitch;
-        const modelMat = mat4Transform3D(
-          ent.pos[0],
-          ent.pos[1],
-          ent.pos[2],
-          yaw,
-          pitch,
-          s
-        );
+        const modelMat = mat4Transform3D(ent.pos[0], ent.pos[1], ent.pos[2], yaw, pitch, s);
 
         const uData = new Float32Array(44);
         uData.set(viewProj, 0);
         uData.set(modelMat, 16);
         uData.set([eye[0], eye[1], eye[2], t], 32);
-        uData.set([ent.result.animMode, ent.result.sss, 0, 0], 36);
+        uData.set([ent.result.animMode, ent.result.sss, 0, viewMode === "single" ? 1 : 0], 36);
         uData.set([ent.result.accent[0], ent.result.accent[1], ent.result.accent[2], 1], 40);
         device.queue.writeBuffer(ent.uniformBuffer, 0, uData);
 
@@ -2267,9 +2676,14 @@
         scenePass.draw(ent.result.mesh.vertCount);
       }
 
-      scenePass.setBindGroup(0, floorBindGroup);
-      scenePass.setVertexBuffer(0, floorBuffer);
-      scenePass.draw(floorMesh.vertCount);
+      // Draw Transparent Glass Walls, Water Surface & Rising Bubbles in Aquarium mode
+      if (viewMode === "swarm") {
+        scenePass.setPipeline(waterPipeline);
+        scenePass.setBindGroup(0, waterBindGroup);
+        scenePass.setVertexBuffer(0, waterBuffer);
+        scenePass.draw(env.waterMesh.vertCount);
+      }
+
       scenePass.end();
 
       // Pass 2: Bloom + ACES Tone Mapping -> Swapchain
